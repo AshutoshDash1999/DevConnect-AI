@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Oswald:wght@700&family=Pacifico&family=Space+Grotesk:wght@400;500;700&display=swap');
 @import "tailwindcss";
 * {
   box-sizing: border-box;
@@ -2574,10 +2574,10 @@ footer {
 }
 
 .waitlist-section h3 span {
-  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  -webkit-text-fill-color: initial;
+  background-clip: initial;
+  color: var(--accent-primary);
 }
 
 .waitlist-section p {
@@ -2644,4 +2644,898 @@ footer {
     flex-direction: column;
   }
 }
+
+/* ─── NEO-BRUTALIST STYLING FOR REDESIGN ─── */
+#landing-page-view {
+  background-color: #FFFDF9 !important;
+  color: #111111 !important;
+  font-family: 'Space Grotesk', 'Inter', sans-serif !important;
+  min-height: 100vh;
+}
+
+#landing-page-view * {
+  border-color: #000000;
+}
+
+/* Fonts */
+.font-oswald {
+  font-family: 'Oswald', sans-serif !important;
+}
+
+.font-pacifico {
+  font-family: 'Pacifico', cursive !important;
+}
+
+.font-space {
+  font-family: 'Space Grotesk', sans-serif !important;
+}
+
+/* Neo-Brutalist Cards */
+.card-brutalist {
+  background-color: #ffffff;
+  border: 3px solid #000000 !important;
+  border-radius: 16px;
+  box-shadow: 6px 6px 0px #000000;
+  transition: all 0.15s ease;
+  color: #111111;
+  padding: 24px;
+}
+
+.card-brutalist:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px #000000;
+}
+
+/* Neo-Brutalist Buttons */
+.btn-brutalist-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 48px;
+  min-width: 240px;
+  background-color: #FFD028; /* Neo-brutalist yellow */
+  color: #111111 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 3px 3px 0px #000000;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.btn-brutalist-nav:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #000000;
+  background-color: #ffe066; /* lighter yellow on hover */
+}
+
+.btn-brutalist-nav:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.btn-brutalist-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background-color: #E07A1B; /* brandGold */
+  color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  border-radius: 9999px;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 5px 5px 0px #000000;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.btn-brutalist-primary:hover {
+  background-color: #f97316;
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px #000000;
+}
+
+.btn-brutalist-primary:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.btn-brutalist-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background-color: #ffffff;
+  color: #111111 !important;
+  border: 3px solid #000000 !important;
+  border-radius: 9999px;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 5px 5px 0px #000000;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.btn-brutalist-secondary:hover {
+  background-color: #f3f4f6;
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px #000000;
+}
+
+.btn-brutalist-secondary:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.btn-brutalist-green {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background-color: #00875A !important;
+  color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  border-radius: 9999px;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 5px 5px 0px #000000;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.btn-brutalist-green:hover {
+  background-color: #059669 !important;
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px #000000;
+}
+
+.btn-brutalist-green:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0px #000000;
+}
+
+/* Custom Outlined Badges & Stickers */
+.badge-brutalist-green {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  background-color: #00875A;
+  color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 3px 3px 0px #000000;
+  text-transform: uppercase;
+}
+
+.stamp-badge {
+  position: absolute;
+  background-color: #E07A1B;
+  color: #ffffff;
+  border: 3px solid #000000;
+  border-radius: 50%;
+  width: 90px;
+  height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.65rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0px #000000;
+  transform: rotate(-12deg);
+  z-index: 10;
+}
+
+/* Decreased Navbar Height & Outline Styles */
+#landing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #FFFDF9 !important;
+  border-bottom: 3px solid #000000 !important;
+  padding: 10px 6%;
+  height: 64px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#landing-nav .logo {
+  color: #111111 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700;
+}
+
+#landing-nav .logo-icon {
+  background: #00875A !important;
+  color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+#landing-nav .nav-links a {
+  color: #111111 !important;
+  font-weight: 600;
+}
+
+#landing-nav .nav-links a::after {
+  display: none;
+}
+
+/* Rebuilding Hero Structure */
+#landing-page-view .hero-brutalist {
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  gap: 24px;
+  align-items: center;
+  padding: 80px 4% 120px 4%;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 85vh;
+}
+
+#landing-page-view .hero-col-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+}
+
+#landing-page-view .hero-col-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+}
+
+#landing-page-view .hero-col-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+#landing-page-view .mascot-container {
+  position: relative;
+  border: 3px solid #000000;
+  border-radius: 20px;
+  background-color: #ffffff;
+  padding: 16px;
+  box-shadow: 6px 6px 0px #000000;
+}
+
+#landing-page-view .mascot-img {
+  width: 220px;
+  height: auto;
+  display: block;
+}
+
+#landing-page-view .hero-title-container {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+#landing-page-view .hero-heading {
+  font-family: 'Oswald', sans-serif !important;
+  font-size: 6rem;
+  font-weight: 900;
+  line-height: 0.95;
+  color: #111111;
+  text-transform: uppercase;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+#landing-page-view .hero-script-overlay {
+  font-family: 'Pacifico', cursive !important;
+  font-size: 4.5rem;
+  color: #E07A1B;
+  position: absolute;
+  top: 25%;
+  left: 38%;
+  transform: rotate(-10deg);
+  text-shadow: 2px 2px 0px #000000;
+  pointer-events: none;
+  z-index: 5;
+}
+
+#landing-page-view .hero-subtext {
+  font-size: 1.15rem;
+  color: #4b5563;
+  max-width: 620px;
+  line-height: 1.6;
+  margin-bottom: 40px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+}
+
+#landing-page-view .hero-actions-container {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+/* Responsiveness overrides for brutalist hero */
+@media (max-width: 1024px) {
+  #landing-page-view .hero-brutalist {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: auto auto !important;
+    padding: 60px 24px 80px 24px !important;
+    gap: 32px !important;
+  }
+  
+  #landing-page-view .hero-col-center {
+    grid-column: span 2 !important;
+    grid-row: 1 !important;
+  }
+  
+  #landing-page-view .hero-col-left {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  #landing-page-view .hero-col-right {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  #landing-page-view .mascot-img {
+    width: 150px !important;
+  }
+  
+  #landing-page-view .hero-heading {
+    font-size: 4.5rem !important;
+  }
+  
+  #landing-page-view .hero-script-overlay {
+    font-size: 3.5rem !important;
+    left: 25% !important;
+    top: 20% !important;
+  }
+}
+
+@media (max-width: 640px) {
+  #landing-page-view .hero-brutalist {
+    gap: 24px !important;
+  }
+  #landing-page-view .mascot-img {
+    width: 110px !important;
+  }
+  #landing-page-view .mascot-container {
+    padding: 10px !important;
+  }
+  #landing-page-view .stamp-badge {
+    width: 70px !important;
+    height: 70px !important;
+    font-size: 0.55rem !important;
+  }
+}
+
+/* ─── GENERAL BRUTALIST OVERRIDES FOR OTHER SECTIONS ─── */
+#landing-page-view .section {
+  background-color: #FFFDF9 !important;
+  padding: 80px 6%;
+}
+
+#landing-page-view .section-title h2 {
+  font-family: 'Oswald', sans-serif !important;
+  font-size: 3.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #111111 !important;
+  letter-spacing: -0.5px;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+#landing-page-view .section-title h2 span {
+  color: #E07A1B !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+#landing-page-view .section-title p {
+  color: #4b5563 !important;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+}
+
+/* Features showcase cards */
+#landing-page-view .features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+#landing-page-view .feature-card {
+  background-color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  border-radius: 16px !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+  color: #111111 !important;
+  transition: all 0.15s ease !important;
+  padding: 32px !important;
+  backdrop-filter: none !important;
+}
+
+#landing-page-view .feature-card:hover {
+  transform: translate(-3px, -3px) !important;
+  box-shadow: 9px 9px 0px #000000 !important;
+  background-color: #ffffff !important;
+}
+
+#landing-page-view .feature-icon {
+  background-color: #00875A !important;
+  color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  border-radius: 8px !important;
+  width: 48px !important;
+  height: 48px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#landing-page-view .feature-card h3 {
+  font-family: 'Space Grotesk', sans-serif !important;
+  color: #111111 !important;
+  font-weight: 750 !important;
+  font-size: 1.35rem !important;
+  margin-top: 8px;
+}
+
+#landing-page-view .feature-card p {
+  color: #4b5563 !important;
+  font-size: 0.95rem;
+}
+
+/* Workflow steps */
+#landing-page-view .workflow-container::before {
+  background: #000000 !important;
+  width: 4px !important;
+  left: 39px !important;
+}
+
+#landing-page-view .workflow-num {
+  background-color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  color: #111111 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  width: 82px !important;
+  height: 82px !important;
+  font-family: 'Oswald', sans-serif !important;
+}
+
+#landing-page-view .workflow-step.active .workflow-num {
+  background-color: #00875A !important;
+  color: #ffffff !important;
+  border-color: #000000 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+#landing-page-view .workflow-card {
+  background-color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+  color: #111111 !important;
+  padding: 24px !important;
+  border-radius: 16px !important;
+  backdrop-filter: none !important;
+}
+
+#landing-page-view .workflow-card h3 {
+  color: #111111 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 750 !important;
+  margin-bottom: 8px;
+}
+
+#landing-page-view .workflow-card p {
+  color: #4b5563 !important;
+}
+
+/* Community stats */
+#landing-page-view .stats-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+#landing-page-view .stat-metric-card {
+  background-color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+  border-radius: 16px !important;
+  padding: 32px 16px !important;
+  backdrop-filter: none !important;
+}
+
+#landing-page-view .stat-metric-card::before {
+  display: none !important;
+}
+
+#landing-page-view .stat-metric-val {
+  font-family: 'Oswald', sans-serif !important;
+  font-size: 3.5rem !important;
+  color: #E07A1B !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  margin-bottom: 8px !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+#landing-page-view .stat-metric-label {
+  color: #111111 !important;
+  font-weight: 700 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  text-transform: uppercase !important;
+  font-size: 0.85rem !important;
+}
+
+/* Waitlist module */
+#landing-page-view .waitlist-section {
+  background-color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  box-shadow: 8px 8px 0px #000000 !important;
+  border-radius: 24px !important;
+  padding: 48px 24px !important;
+  max-width: 800px !important;
+  margin: 60px auto !important;
+  text-align: center !important;
+}
+
+#landing-page-view .waitlist-section h3 {
+  font-family: 'Oswald', sans-serif !important;
+  font-size: 3rem !important;
+  text-transform: uppercase !important;
+  color: #111111 !important;
+  margin-bottom: 12px !important;
+}
+
+#landing-page-view .waitlist-section h3 span {
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+  background-clip: initial !important;
+  color: #E07A1B !important;
+}
+
+#landing-page-view .waitlist-section p {
+  color: #4b5563 !important;
+  max-width: 500px !important;
+  margin: 0 auto 32px auto !important;
+}
+
+#landing-page-view .waitlist-form {
+  display: flex !important;
+  gap: 16px !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+}
+
+#landing-page-view .waitlist-input {
+  flex: 1 !important;
+  background-color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  color: #111111 !important;
+  border-radius: 9999px !important;
+  padding: 12px 24px !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 500 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#landing-page-view .waitlist-form button {
+  background-color: #00875A !important;
+  color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  padding: 12px 28px !important;
+  transition: all 0.1s ease !important;
+}
+
+#landing-page-view .waitlist-form button:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+#landing-page-view .waitlist-form button:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+/* Call to Action */
+#landing-page-view .cta {
+  background-color: #00875A !important; /* Neo-brutalist green */
+  border: 3px solid #000000 !important;
+  box-shadow: 8px 8px 0px #000000 !important;
+  border-radius: 24px !important;
+  color: #ffffff !important;
+  padding: 60px 24px !important;
+  max-width: 1000px !important;
+  margin: 60px auto !important;
+  text-align: center !important;
+  background-image: none !important;
+}
+
+#landing-page-view .cta h2 {
+  font-family: 'Oswald', sans-serif !important;
+  font-size: 3.5rem !important;
+  text-transform: uppercase !important;
+  margin-bottom: 16px !important;
+  color: #ffffff !important;
+}
+
+#landing-page-view .cta p {
+  color: #ffffff !important;
+  font-size: 1.2rem !important;
+  margin-bottom: 32px !important;
+  max-width: 600px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+#landing-page-view .cta .btn-brutalist-primary,
+#landing-page-view .cta .btn-primary {
+  background-color: #FFD028 !important; /* Neo-brutalist yellow */
+  color: #111111 !important;
+  border: 3px solid #000000 !important;
+  border-radius: 9999px !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700 !important;
+  transition: all 0.1s ease !important;
+  display: inline-flex !important;
+}
+
+#landing-page-view .cta .btn-brutalist-primary:hover,
+#landing-page-view .cta .btn-primary:hover {
+  background-color: #ffe066 !important;
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+}
+
+#landing-page-view .cta .btn-brutalist-primary:active,
+#landing-page-view .cta .btn-primary:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+/* Footer override */
+#landing-page-view footer {
+  border-top: 3px solid #000000 !important;
+  background-color: #FFFDF9 !important;
+  padding: 32px 24px !important;
+  color: #111111 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+/* Responsiveness overrides for grid structures */
+@media (max-width: 900px) {
+  #landing-page-view .features-grid,
+  #landing-page-view .stats-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ─── NEO-BRUTALIST AUTHENTICATION PAGES ─── */
+.auth-page {
+  min-height: calc(100vh - 64px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  background-color: #FFFDF9 !important;
+  color: #111111 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  padding: 40px 20px !important;
+  position: relative !important;
+  overflow-y: auto !important;
+}
+
+.auth-card {
+  background-color: #ffffff !important;
+  border: 3px solid #000000 !important;
+  box-shadow: 8px 8px 0px #000000 !important;
+  border-radius: 20px !important;
+  padding: 40px !important;
+  max-width: 450px !important;
+  width: 100% !important;
+  position: relative;
+  z-index: 10;
+  margin: auto !important; /* Centering with auto margins resolves vertical overflow overlapping */
+}
+
+.auth-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-title {
+  font-family: 'Oswald', sans-serif !important;
+  font-size: 2.5rem !important;
+  text-transform: uppercase !important;
+  font-weight: 900 !important;
+  color: #111111 !important;
+  line-height: 1.1;
+  margin-top: 12px;
+}
+
+.auth-subtitle {
+  color: #4b5563 !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  margin-top: 8px;
+}
+
+.auth-subtitle span {
+  color: #E07A1B !important;
+  font-weight: 700 !important;
+}
+
+.auth-error {
+  background-color: #fee2e2 !important;
+  border: 2px solid #ef4444 !important;
+  color: #b91c1c !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 24px !important;
+  box-shadow: 3px 3px 0px #ef4444 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-form-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.auth-input {
+  width: 100% !important;
+  background-color: #ffffff !important;
+  border: 2.5px solid #000000 !important;
+  border-radius: 12px !important;
+  padding: 14px 16px 14px 44px !important;
+  color: #111111 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  outline: none !important;
+  transition: all 0.1s ease !important;
+}
+
+.auth-input:focus {
+  border-color: #00875A !important; /* Neo-brutalist green */
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+.auth-input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #4b5563 !important;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 32px 0 24px 0;
+}
+
+.auth-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #000000;
+  z-index: 1;
+}
+
+.auth-divider span {
+  position: relative;
+  z-index: 2;
+  background-color: #ffffff;
+  padding: 0 16px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #4b5563;
+  letter-spacing: 1px;
+}
+
+.auth-social-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.btn-auth-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 12px !important;
+  padding: 10px 16px !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  cursor: pointer !important;
+  transition: all 0.1s ease !important;
+}
+
+.btn-auth-social:hover {
+  transform: translate(-1px, -1px) !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  background-color: #f9f9f9 !important;
+}
+
+.btn-auth-social:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #000000;
+  color: #4b5563 !important;
+  font-size: 0.9rem !important;
+}
+
+.auth-footer a {
+  color: #00875A !important;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.auth-footer a:hover {
+  color: #E07A1B !important;
+}
+
+
 

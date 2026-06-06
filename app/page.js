@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Navbar from "../components/Navbar";
+import CodeReview from "../components/CodeReview.js";
 
 export default function Home() {
   return (
@@ -74,8 +75,14 @@ export default function Home() {
                   <div className="mockup-post-header">
                     <div className="mockup-avatar"></div>
                     <div className="mockup-meta">
-                      <div className="mockup-line-sm" style={{ width: "120px" }}></div>
-                      <div className="mockup-line-sm" style={{ width: "70px", opacity: "0.5" }}></div>
+                      <div
+                        className="mockup-line-sm"
+                        style={{ width: "120px" }}
+                      ></div>
+                      <div
+                        className="mockup-line-sm"
+                        style={{ width: "70px", opacity: "0.5" }}
+                      ></div>
                     </div>
                   </div>
 
@@ -95,7 +102,9 @@ export default function Home() {
                   </div>
 
                   <div className="mockup-ai-card">
-                    <div className="mockup-ai-badge">🤖 DevConnect Copilot</div>
+                    <div className="mockup-ai-badge">
+                      🤖 DevConnect Copilot
+                    </div>
                     <div
                       className="mockup-line-sm"
                       style={{
@@ -122,10 +131,12 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ── Features ── */}
+      {/* ── AI Features Showcase ── */}
       <section className="section" id="features">
         <div className="section-title">
-          <h2>AI Features <span>Showcase</span></h2>
+          <h2>
+            AI Features <span>Showcase</span>
+          </h2>
           <p>
             DevConnect features custom LLM orchestration running locally in your
             workspace to automate tedious code tasks.
@@ -162,10 +173,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Workflow ── */}
+      {/* ── AI Code Review Assistant Section ── */}
+      <CodeReview />
+
+      {/* ── How It Works ── */}
       <section className="section" id="workflow">
         <div className="section-title">
-          <h2>How <span>DevConnect</span> Works</h2>
+          <h2>
+            How <span>DevConnect</span> Works
+          </h2>
           <p>
             A step-by-step tour of building projects on our interactive
             collaboration timeline.
@@ -208,11 +224,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
+      {/* ── Stats Dashboard ── */}
       <section className="section" id="stats">
         <div className="section-title">
-          <h2>Community <span>Statistics</span> Dashboard</h2>
-          <p>Review dashboard data tracking community health and AI performance.</p>
+          <h2>
+            Community <span>Statistics</span> Dashboard
+          </h2>
+          <p>
+            Review dashboard data tracking community health and AI performance.
+          </p>
         </div>
 
         <div className="stats-dashboard">
@@ -220,14 +240,17 @@ export default function Home() {
             <div className="stat-metric-val">10,482</div>
             <div className="stat-metric-label">Active Engineers</div>
           </div>
+
           <div className="stat-metric-card">
             <div className="stat-metric-val">52,192</div>
             <div className="stat-metric-label">AI Code Reviews</div>
           </div>
+
           <div className="stat-metric-card">
             <div className="stat-metric-val">4.2s</div>
             <div className="stat-metric-label">Avg Review Latency</div>
           </div>
+
           <div className="stat-metric-card">
             <div className="stat-metric-val">99.8%</div>
             <div className="stat-metric-label">System Uptime</div>
@@ -235,13 +258,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Waitlist ── */}
+      {/* ── Waitlist Section ── */}
       <section className="waitlist-section" id="waitlist">
-        <h3>Join the <span>DevConnect Waitlist</span></h3>
+        <h3>
+          Join the <span>DevConnect Waitlist</span>
+        </h3>
         <p>
           Be the first to know when registration opens for public access and
           early beta features.
         </p>
+
         <form className="waitlist-form">
           <input
             type="email"
@@ -255,7 +281,7 @@ export default function Home() {
         </form>
       </section>
 
-      {/* ── CTA ── */}
+      {/* ── CTA Section ── */}
       <section className="cta">
         <h2>Ready to Accelerate Your Journey?</h2>
         <p>

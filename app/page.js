@@ -1,137 +1,62 @@
 import Link from "next/link";
 import CodeReview from "../components/CodeReview";
+import AnimatedStats from "../components/AnimatedStats";
+import Navbar from "../components/Navbar";
 
 export default function Home() {
   return (
-    <main id="landing-page-view">
+    <div id="landing-page-view" suppressHydrationWarning>
       <div className="glow-blob glow-blob-1"></div>
       <div className="glow-blob glow-blob-2"></div>
       <div className="glow-blob glow-blob-3"></div>
 
-      {/* ── Navbar inline ── */}
-      <nav id="landing-nav">
-        <Link href="/" className="logo">
-          <div className="logo-icon">🧠</div>
-          <span>DevConnect AI</span>
-        </Link>
-
-        <div className="nav-links" id="nav-menu">
-          <a href="#features">AI Showcase</a>
-          <a href="#workflow">How It Works</a>
-          <a href="#stats">Dashboard</a>
-          <a href="#waitlist">Waitlist</a>
-          <Link href="/dashboard" className="btn-nav-cta">
-            Open Community App
-          </Link>
-        </div>
-      </nav>
+      <Navbar variant="landing" />
 
       {/* ── Hero ── */}
-      <header className="hero">
-        <div className="badge">
-          <span className="badge-dot"></span>
-          🚀 AI-Powered Developer Community
-        </div>
-
-        <h1>
-          Building the Future of <br />
-          <span>Developer Collaboration</span>
-        </h1>
-
-        <p>
-          DevConnect AI is a next-generation social ecosystem where engineers
-          share knowledge, collaborate on repositories, and leverage contextual
-          AI agents to debug errors, review pull requests, and deploy code
-          faster.
-        </p>
-
-        <div className="hero-ctas">
-          <Link href="/dashboard" className="btn btn-primary">
-            <span>Launch Community Feed</span>
-          </Link>
-
-          <a href="#features" className="btn btn-secondary">
-            Explore AI Showcase
-          </a>
-        </div>
-
-        <div className="hero-mockup-wrapper">
-          <div className="mockup-window">
-            <div className="mockup-header">
-              <div className="mockup-dots">
-                <span className="mockup-dot dot-red"></span>
-                <span className="mockup-dot dot-yellow"></span>
-                <span className="mockup-dot dot-green"></span>
-              </div>
-              <div className="mockup-title">feed_app_controller.tsx</div>
-              <div style={{ width: "32px" }}></div>
+      <header className="hero-brutalist">
+        {/* Left Column (Mascot Developer) */}
+        <div className="hero-col-left">
+          <div className="mascot-container">
+            <img src="/images/mascot_developer.png" className="mascot-img" alt="Developer Mascot" />
+            <div className="badge-brutalist-green" style={{ position: 'absolute', top: '-15px', right: '-10px', transform: 'rotate(6deg)', zIndex: 5 }}>
+              STATE: CODING
             </div>
+          </div>
+        </div>
 
-            <div className="mockup-body">
-              <aside className="mockup-sidebar">
-                <div className="mockup-sidebar-item active"></div>
-                <div className="mockup-sidebar-item"></div>
-                <div className="mockup-sidebar-item"></div>
-                <div
-                  className="mockup-sidebar-item"
-                  style={{
-                    marginTop: "auto",
-                    height: "32px",
-                    borderRadius: "50%",
-                    width: "32px",
-                    background: "rgba(255,255,255,0.05)",
-                  }}
-                ></div>
-              </aside>
+        {/* Center Column (Text & CTAs) */}
+        <div className="hero-col-center">
+          <div className="badge-brutalist-green" style={{ marginBottom: '24px', background: '#00875A', color: 'white' }}>
+            AI-POWERED DEV COMMUNITY
+          </div>
 
-              <section className="mockup-main">
-                <div className="mockup-post">
-                  <div className="mockup-post-header">
-                    <div className="mockup-avatar"></div>
-                    <div className="mockup-meta">
-                      <div className="mockup-line-sm" style={{ width: "120px" }}></div>
-                      <div className="mockup-line-sm" style={{ width: "70px", opacity: "0.5" }}></div>
-                    </div>
-                  </div>
+          <div className="hero-title-container">
+            <h1 className="hero-heading" style={{ fontSize: '4.8rem' }}>
+              FUTURE &nbsp;&nbsp; DEV<br />COLLABORATION
+            </h1>
+            <span className="hero-script-overlay" style={{ top: '20%', left: '57%', transform: 'translate(-50%, -50%) rotate(-10deg)' }}>of</span>
+          </div>
 
-                  <div className="mockup-code-card">
-                    <span className="syn-comment">
-                      // App Router re-renders infinitely on state push
-                    </span>
-                    <br />
-                    <span className="syn-keyword">const</span> handleFilter =
-                    (filter) =&gt; {"{"}
-                    <br />
-                    &nbsp;&nbsp;router.
-                    <span className="mockup-code-highlight">push</span>(
-                    <span className="syn-string">`?tab=${"{filter}"}`</span>);
-                    <br />
-                    {"}"}
-                  </div>
+          <p className="hero-subtext">
+            Next-gen social platform for developers. Collaborate on repositories, share knowledge, and run contextual AI reviews automatically.
+          </p>
 
-                  <div className="mockup-ai-card">
-                    <div className="mockup-ai-badge">🤖 DevConnect Copilot</div>
-                    <div
-                      className="mockup-line-sm"
-                      style={{
-                        width: "90%",
-                        background: "var(--accent-purple)",
-                        height: "6px",
-                        marginBottom: "6px",
-                      }}
-                    ></div>
-                    <div
-                      className="mockup-line-sm"
-                      style={{
-                        width: "75%",
-                        background: "var(--accent-purple)",
-                        height: "6px",
-                        opacity: "0.7",
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              </section>
+          <div className="hero-actions-container">
+            <Link href="/dashboard" className="btn-brutalist-primary">
+              Launch Community Feed
+            </Link>
+            <a href="#features" className="btn-brutalist-secondary">
+              Explore AI Showcase
+            </a>
+          </div>
+        </div>
+
+        {/* Right Column (Mascot AI Assistant) */}
+        <div className="hero-col-right">
+          <div className="mascot-container">
+            <img src="/images/mascot_ai.png" className="mascot-img" alt="AI Mascot" />
+            <div className="stamp-badge" style={{ top: '-25px', left: '-15px' }}>
+              AI<br />Approved
             </div>
           </div>
         </div>
@@ -149,7 +74,6 @@ export default function Home() {
 
         <div className="features-grid">
           <div className="feature-card feature-card-ai">
-            <div className="feature-icon">🤖</div>
             <h3>Auto Code Reviewer</h3>
             <p>
               Scans snippets posted in conversations, verifying memory safety,
@@ -158,7 +82,6 @@ export default function Home() {
           </div>
 
           <div className="feature-card">
-            <div className="feature-icon">⚡</div>
             <h3>Intelligent Composer</h3>
             <p>
               Helps with formatting code blocks, picking hashtags, and polishing
@@ -167,7 +90,6 @@ export default function Home() {
           </div>
 
           <div className="feature-card">
-            <div className="feature-icon">🔍</div>
             <h3>Smart Query Classifier</h3>
             <p>
               Categorizes discussions and routes questions to relevant topic
@@ -233,24 +155,7 @@ export default function Home() {
           <p>Review dashboard data tracking community health and AI performance.</p>
         </div>
 
-        <div className="stats-dashboard">
-          <div className="stat-metric-card">
-            <div className="stat-metric-val">10,482</div>
-            <div className="stat-metric-label">Active Engineers</div>
-          </div>
-          <div className="stat-metric-card">
-            <div className="stat-metric-val">52,192</div>
-            <div className="stat-metric-label">AI Code Reviews</div>
-          </div>
-          <div className="stat-metric-card">
-            <div className="stat-metric-val">4.2s</div>
-            <div className="stat-metric-label">Avg Review Latency</div>
-          </div>
-          <div className="stat-metric-card">
-            <div className="stat-metric-val">99.8%</div>
-            <div className="stat-metric-label">System Uptime</div>
-          </div>
-        </div>
+        <AnimatedStats />
       </section>
 
       {/* ── Waitlist ── */}
@@ -267,7 +172,7 @@ export default function Home() {
             placeholder="Enter your developer email..."
             required
           />
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn-brutalist-green">
             Get Early Access
           </button>
         </form>
@@ -280,7 +185,7 @@ export default function Home() {
           Join the next generation of developer workspaces powered by local code
           reviews.
         </p>
-        <Link href="/dashboard" className="btn btn-primary">
+        <Link href="/dashboard" className="btn-brutalist-primary">
           Launch Community Feed
         </Link>
       </section>
@@ -289,6 +194,6 @@ export default function Home() {
       <footer>
         <p>© 2026 DevConnect AI • Built for Modern Engineering Teams</p>
       </footer>
-    </main>
+    </div>
   );
 }

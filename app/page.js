@@ -31,14 +31,14 @@ export default function Home() {
           </div>
 
           <div className="hero-title-container">
-            <h1 className="hero-heading">
-              READY<br />BUILD
+            <h1 className="hero-heading" style={{ fontSize: '4.8rem' }}>
+              FUTURE &nbsp;&nbsp; DEV<br />COLLABORATION
             </h1>
-            <span className="hero-script-overlay">to</span>
+            <span className="hero-script-overlay" style={{ top: '20%', left: '57%', transform: 'translate(-50%, -50%) rotate(-10deg)' }}>of</span>
           </div>
 
           <p className="hero-subtext">
-            A developer platform solving fragmented learning and real-time collaboration.
+            Next-gen social platform for developers. Collaborate on repositories, share knowledge, and run contextual AI reviews automatically.
           </p>
 
           <div className="hero-actions-container">

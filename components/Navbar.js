@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -7,6 +8,7 @@ import { useRouter } from "next/navigation";
 export default function Navbar({ variant = "landing" }) {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -21,16 +23,24 @@ export default function Navbar({ variant = "landing" }) {
   if (variant === "landing") {
     return (
       <nav id="landing-nav">
-        <Link href="/" className="logo">
+        <Link href="/" className="logo" onClick={() => setIsMenuOpen(false)}>
           <span>DevConnect AI</span>
         </Link>
 
-        <div className="nav-links" id="nav-menu">
-          <a href="/#features">AI Showcase</a>
-          <a href="/#workflow">How It Works</a>
-          <a href="/#stats">Stats</a>
-          <a href="/#waitlist">Waitlist</a>
-          <Link href="/dashboard" className="btn-brutalist-nav">
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label="Toggle navigation menu"
+        >
+          {isMenuOpen ? "✕" : "☰"}
+        </button>
+
+        <div className={`nav-links ${isMenuOpen ? "active" : ""}`} id="nav-menu">
+          <a href="/#features" onClick={() => setIsMenuOpen(false)}>AI Showcase</a>
+          <a href="/#workflow" onClick={() => setIsMenuOpen(false)}>How It Works</a>
+          <a href="/#stats" onClick={() => setIsMenuOpen(false)}>Stats</a>
+          <a href="/#waitlist" onClick={() => setIsMenuOpen(false)}>Waitlist</a>
+          <Link href="/dashboard" className="btn-brutalist-nav" onClick={() => setIsMenuOpen(false)}>
             Open Community App
           </Link>
         </div>

@@ -85,7 +85,7 @@ export default function CodeReview() {
         <p style={{ color: '#4b5563', fontWeight: '500' }}>Security, performance, and best practice checks</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+      <div className="code-review-grid">
         {/* Input Section */}
         <div style={{ background: '#ffffff', border: '3px solid #000000', borderRadius: '16px', padding: '24px', boxShadow: '6px 6px 0px #000000' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>

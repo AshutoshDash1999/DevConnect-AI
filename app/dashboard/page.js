@@ -8,10 +8,15 @@ import { db } from "../../lib/firebase";
 import {
   collection,
   addDoc,
+  deleteDoc,
+  updateDoc,
+  doc,
   query,
   orderBy,
   onSnapshot,
   serverTimestamp,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 
 const S = {
@@ -31,7 +36,6 @@ const S = {
     padding: 24,
     flex: 1,
   },
-  // ── Left Sidebar ────────────────────────────────────────────────────────────
   leftSidebar: {
     position: "sticky",
     top: 88,
@@ -93,14 +97,12 @@ const S = {
     textDecoration: "none",
     transition: "all var(--transition-fast)",
   },
-  // ── Feed Column ─────────────────────────────────────────────────────────────
   feedColumn: {
     display: "flex",
     flexDirection: "column",
     gap: 20,
     minWidth: 0,
   },
-  // Composer
   composerCard: {
     backgroundColor: "var(--bg-secondary)",
     border: "1px solid var(--border-color)",
@@ -230,7 +232,6 @@ const S = {
     fontWeight: 600,
     cursor: "not-allowed",
   },
-  // Feed filters
   feedFiltersBar: {
     display: "flex",
     borderBottom: "1px solid var(--border-color)",
@@ -259,7 +260,6 @@ const S = {
     whiteSpace: "nowrap",
     borderBottom: "2px solid var(--accent-primary)",
   },
-  // Discussion cards
   discussionCard: {
     backgroundColor: "var(--bg-secondary)",
     border: "1px solid var(--border-color)",
@@ -337,7 +337,89 @@ const S = {
     padding: "6px 10px",
     borderRadius: "var(--radius-sm)",
   },
-  // ── Right Sidebar ────────────────────────────────────────────────────────────
+  btnActionDanger: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    background: "transparent",
+    border: "none",
+    color: "#f87171",
+    cursor: "pointer",
+    fontSize: "0.8rem",
+    fontWeight: 500,
+    padding: "4px 6px",
+    borderRadius: "var(--radius-sm)",
+  },
+  // Comment styles
+  commentItem: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    padding: "10px 12px",
+    backgroundColor: "var(--bg-primary)",
+    borderRadius: "var(--radius-md)",
+    border: "1px solid var(--border-color)",
+  },
+  commentHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  commentAuthor: {
+    fontWeight: 600,
+    fontSize: "0.85rem",
+    color: "var(--text-primary)",
+  },
+  commentMeta: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    fontSize: "0.75rem",
+    color: "var(--text-muted)",
+  },
+  commentBody: {
+    fontSize: "0.875rem",
+    color: "var(--text-secondary)",
+    lineHeight: 1.5,
+  },
+  commentEditTextarea: {
+    width: "100%",
+    background: "var(--bg-secondary)",
+    border: "1px solid var(--border-color)",
+    borderRadius: "var(--radius-sm)",
+    color: "var(--text-primary)",
+    outline: "none",
+    fontSize: "0.875rem",
+    fontFamily: "inherit",
+    padding: "6px 8px",
+    resize: "vertical",
+    minHeight: 60,
+  },
+  commentEditActions: {
+    display: "flex",
+    gap: 6,
+    marginTop: 4,
+  },
+  btnSm: {
+    padding: "4px 12px",
+    backgroundColor: "var(--accent-primary)",
+    border: "none",
+    borderRadius: "var(--radius-sm)",
+    color: "#000",
+    fontWeight: 600,
+    fontSize: "0.8rem",
+    cursor: "pointer",
+  },
+  btnSmGhost: {
+    padding: "4px 12px",
+    backgroundColor: "transparent",
+    border: "1px solid var(--border-color)",
+    borderRadius: "var(--radius-sm)",
+    color: "var(--text-muted)",
+    fontWeight: 500,
+    fontSize: "0.8rem",
+    cursor: "pointer",
+  },
   rightSidebar: {
     position: "sticky",
     top: 88,
@@ -439,13 +521,23 @@ export default function Dashboard() {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState("");
   const [posting, setPosting] = useState(false);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [openCommentsFor, setOpenCommentsFor] = useState(null);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editContent, setEditContent] = useState("");
+  // Track which comment is being edited: { postId, createdAt }
+  const [editingComment, setEditingComment] = useState(null);
+  const [editingCommentDraft, setEditingCommentDraft] = useState("");
+
+  const availableTags = ["#react", "#rust", "#typescript", "#ai-agents", "#css"];
 
   useEffect(() => {
     const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"));
     const unsubscribe = onSnapshot(
       postsQuery,
       (snapshot) => {
-        setPosts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setPosts(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
       },
       (err) => {
         console.error(err);
@@ -454,6 +546,8 @@ export default function Dashboard() {
     );
     return () => unsubscribe();
   }, []);
+
+  // ── Post actions ────────────────────────────────────────────────────────────
 
   const handleCreatePost = async () => {
     if (!content.trim() || !user) return;
@@ -465,16 +559,143 @@ export default function Dashboard() {
         displayName: user.displayName || user.email || "Anonymous User",
         photoURL: user.photoURL || "",
         content: content.trim(),
+        tags: selectedTags,
         timestamp: serverTimestamp(),
         likes: 0,
+        likedBy: [],
         comments: [],
       });
       setContent("");
+      setSelectedTags([]);
     } catch (err) {
       console.error(err);
       setError("Failed to create post. Please try again.");
     } finally {
       setPosting(false);
+    }
+  };
+
+  const toggleTag = (tag) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleToggleLike = async (post) => {
+    if (!user) return;
+    const liked = (post.likedBy || []).includes(user.uid);
+    try {
+      await updateDoc(doc(db, "posts", post.id), {
+        likedBy: liked ? arrayRemove(user.uid) : arrayUnion(user.uid),
+        likes: (post.likedBy || []).length + (liked ? -1 : 1),
+      });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update like. Please try again.");
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Delete this post? This cannot be undone.")) return;
+    try {
+      await deleteDoc(doc(db, "posts", postId));
+    } catch (err) {
+      console.error(err);
+      setError("Failed to delete post. Please try again.");
+    }
+  };
+
+  const startEdit = (post) => {
+    setEditingId(post.id);
+    setEditContent(post.content);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditContent("");
+  };
+
+  const handleSaveEdit = async (postId) => {
+    if (!editContent.trim()) return;
+    try {
+      await updateDoc(doc(db, "posts", postId), {
+        content: editContent.trim(),
+        edited: true,
+      });
+      setEditingId(null);
+      setEditContent("");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update post. Please try again.");
+    }
+  };
+
+  // ── Comment actions ─────────────────────────────────────────────────────────
+
+  const toggleComments = (postId) => {
+    setOpenCommentsFor((prev) => (prev === postId ? null : postId));
+    setCommentDraft("");
+    setEditingComment(null);
+  };
+
+  const handleAddComment = async (post) => {
+    if (!commentDraft.trim() || !user) return;
+    const newComment = {
+      uid: user.uid,
+      displayName: user.displayName || user.email || "Anonymous User",
+      content: commentDraft.trim(),
+      createdAt: Date.now(),
+      edited: false,
+    };
+    try {
+      await updateDoc(doc(db, "posts", post.id), {
+        comments: arrayUnion(newComment),
+      });
+      setCommentDraft("");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to add comment. Please try again.");
+    }
+  };
+
+  // Edit: replace the old comment object with an updated one via array replace
+  const startEditComment = (comment) => {
+    setEditingComment({ postId: comment._postId, createdAt: comment.createdAt });
+    setEditingCommentDraft(comment.content);
+  };
+
+  const cancelEditComment = () => {
+    setEditingComment(null);
+    setEditingCommentDraft("");
+  };
+
+  const handleSaveCommentEdit = async (post, oldComment) => {
+    if (!editingCommentDraft.trim()) return;
+    const updatedComments = (post.comments || []).map((c) =>
+      c.createdAt === oldComment.createdAt && c.uid === oldComment.uid
+        ? { ...c, content: editingCommentDraft.trim(), edited: true }
+        : c
+    );
+    try {
+      await updateDoc(doc(db, "posts", post.id), { comments: updatedComments });
+      setEditingComment(null);
+      setEditingCommentDraft("");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to edit comment. Please try again.");
+    }
+  };
+
+  const handleDeleteComment = async (post, comment) => {
+    if (!window.confirm("Delete this comment?")) return;
+    const updatedComments = (post.comments || []).filter(
+      (c) => !(c.createdAt === comment.createdAt && c.uid === comment.uid)
+    );
+    try {
+      await updateDoc(doc(db, "posts", post.id), { comments: updatedComments });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to delete comment. Please try again.");
     }
   };
 
@@ -539,8 +760,18 @@ export default function Dashboard() {
                 </div>
 
                 <div style={S.composerTagsInput}>
-                  {["#react", "#rust", "#typescript", "#ai-agents", "#css"].map((tag, i) => (
-                    <span key={tag} style={i === 0 ? S.tagBadgeSelected : S.tagBadge}>{tag}</span>
+                  {availableTags.map((tag) => (
+                    <span
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      style={{
+                        ...(selectedTags.includes(tag) ? S.tagBadgeSelected : S.tagBadge),
+                        cursor: "pointer",
+                        userSelect: "none",
+                      }}
+                    >
+                      {tag}
+                    </span>
                   ))}
                 </div>
 
@@ -606,31 +837,176 @@ export default function Dashboard() {
                             {post.timestamp?.toDate
                               ? post.timestamp.toDate().toLocaleString()
                               : "Just now"}
+                            {post.edited ? " (edited)" : ""}
                           </span>
                         </div>
                       </div>
 
                       <h2 style={S.postTitle}>Community Discussion</h2>
 
-                      <div style={S.postBody}>
-                        <p style={{ margin: 0 }}>{post.content}</p>
-                      </div>
+                      {editingId === post.id ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          <textarea
+                            style={S.composerTextarea}
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                          />
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button style={S.btnPost} onClick={() => handleSaveEdit(post.id)}>Save</button>
+                            <button style={S.btnAction} onClick={cancelEdit}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={S.postBody}>
+                          <p style={{ margin: 0 }}>{post.content}</p>
+                        </div>
+                      )}
 
                       <div style={S.postTags}>
-                        <a href="#" style={S.postTag}>#community</a>
+                        {post.tags && post.tags.length > 0 ? (
+                          post.tags.map((tag) => (
+                            <a href="#" style={S.postTag} key={tag}>{tag}</a>
+                          ))
+                        ) : (
+                          <a href="#" style={S.postTag}>#community</a>
+                        )}
                       </div>
 
                       <div style={S.postActions}>
                         <div style={S.postActionsGroup}>
-                          <button style={S.btnAction}>
-                            ♡ <span>{post.likes || 0}</span> Likes
+                          <button style={S.btnAction} onClick={() => handleToggleLike(post)}>
+                            {(post.likedBy || []).includes(user?.uid) ? "❤️" : "♡"}{" "}
+                            <span>{post.likes || 0}</span> Likes
                           </button>
-                          <button style={S.btnAction}>
-                            💬 <span>{post.comments?.length || 0} Comments</span>
+                          <button style={S.btnAction} onClick={() => toggleComments(post.id)}>
+                            💬 <span>{post.comments?.length || 0}</span> Comments
                           </button>
                         </div>
                         <button style={S.btnAction}>🔖 Save</button>
+                        {user?.uid === post.uid && (
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <button style={S.btnAction} onClick={() => startEdit(post)}>✏️ Edit</button>
+                            <button style={S.btnAction} onClick={() => handleDeletePost(post.id)}>🗑️ Delete</button>
+                          </div>
+                        )}
                       </div>
+
+                      {/* ── Comments panel ──────────────────────────────── */}
+                      {openCommentsFor === post.id && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4, borderTop: "1px solid var(--border-color)", paddingTop: 14 }}>
+
+                          {/* Comment list */}
+                          {(post.comments || []).length === 0 ? (
+                            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
+                              No comments yet. Be the first!
+                            </p>
+                          ) : (
+                            (post.comments || [])
+                              .slice()
+                              .sort((a, b) => a.createdAt - b.createdAt)
+                              .map((c) => {
+                                const isEditingThis =
+                                  editingComment?.postId === post.id &&
+                                  editingComment?.createdAt === c.createdAt;
+                                const isOwner = user?.uid === c.uid;
+
+                                return (
+                                  <div key={`${c.uid}-${c.createdAt}`} style={S.commentItem}>
+                                    <div style={S.commentHeader}>
+                                      <span style={S.commentAuthor}>{c.displayName}</span>
+                                      <div style={S.commentMeta}>
+                                        <span>
+                                          {new Date(c.createdAt).toLocaleString(undefined, {
+                                            month: "short", day: "numeric",
+                                            hour: "2-digit", minute: "2-digit",
+                                          })}
+                                        </span>
+                                        {c.edited && (
+                                          <span style={{ fontStyle: "italic" }}>(edited)</span>
+                                        )}
+                                        {isOwner && !isEditingThis && (
+                                          <>
+                                            <button
+                                              style={S.btnActionDanger}
+                                              onClick={() => startEditComment({ ...c, _postId: post.id })}
+                                              title="Edit comment"
+                                            >
+                                              ✏️
+                                            </button>
+                                            <button
+                                              style={S.btnActionDanger}
+                                              onClick={() => handleDeleteComment(post, c)}
+                                              title="Delete comment"
+                                            >
+                                              🗑️
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {isEditingThis ? (
+                                      <>
+                                        <textarea
+                                          style={S.commentEditTextarea}
+                                          value={editingCommentDraft}
+                                          onChange={(e) => setEditingCommentDraft(e.target.value)}
+                                          autoFocus
+                                        />
+                                        <div style={S.commentEditActions}>
+                                          <button
+                                            style={S.btnSm}
+                                            onClick={() => handleSaveCommentEdit(post, c)}
+                                          >
+                                            Save
+                                          </button>
+                                          <button style={S.btnSmGhost} onClick={cancelEditComment}>
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <p style={{ ...S.commentBody, margin: 0 }}>{c.content}</p>
+                                    )}
+                                  </div>
+                                );
+                              })
+                          )}
+
+                          {/* New comment input */}
+                          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                            <input
+                              style={{
+                                flex: 1,
+                                background: "var(--bg-primary)",
+                                border: "1px solid var(--border-color)",
+                                borderRadius: "var(--radius-md)",
+                                color: "var(--text-primary)",
+                                outline: "none",
+                                fontSize: "0.875rem",
+                                fontFamily: "inherit",
+                                padding: "8px 12px",
+                              }}
+                              placeholder="Write a comment…"
+                              value={commentDraft}
+                              onChange={(e) => setCommentDraft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleAddComment(post);
+                                }
+                              }}
+                            />
+                            <button
+                              style={commentDraft.trim() ? S.btnPost : S.btnPostDisabled}
+                              disabled={!commentDraft.trim()}
+                              onClick={() => handleAddComment(post)}
+                            >
+                              Post
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </article>
                   ))
                 )}
@@ -639,7 +1015,6 @@ export default function Dashboard() {
 
             {/* ── Right Sidebar ─────────────────────────────────────────── */}
             <aside style={S.rightSidebar}>
-              {/* AI Promo Widget */}
               <div style={S.aiPromoWidget}>
                 <h3 style={S.widgetTitleAi}>
                   <span>Code Review Copilot</span>
@@ -653,7 +1028,6 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              {/* Trending Tags */}
               <div style={S.sidebarWidget}>
                 <h3 style={S.widgetTitle}>Trending Tags</h3>
                 <div style={S.trendingList}>
@@ -673,7 +1047,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Active Members */}
               <div style={S.sidebarWidget}>
                 <h3 style={S.widgetTitle}>Active Members</h3>
                 <div style={S.membersList}>

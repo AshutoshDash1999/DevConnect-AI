@@ -6,7 +6,7 @@ import CodeReview from "../components/CodeReview";
 import { useTheme } from "../context/ThemeContext";
 import { useResponsive } from "../hooks/useResponsive";
 
-// ── Design tokens ──────────────────────────────────────────────────────────────
+// Design tokens
 const C = {
   bgDark: "#030712",
   bgCard: "rgba(17,24,39,0.7)",
@@ -24,7 +24,7 @@ export default function Home() {
   const { isMobile, isTablet, isDesktop } = useResponsive();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // ── Responsive style helpers ──────────────────────────────────────────────
+  // Responsive style helpers
   const section = {
     padding: isMobile ? "60px 5%" : isTablet ? "80px 6%" : "100px 8%",
     position: "relative",
@@ -73,7 +73,7 @@ export default function Home() {
       opacity: 0.12,
       filter: "blur(120px)",
     },
-    // ── Inline nav (page.js has its own nav duplicate; we skip it and use <Navbar>) ──
+    // Inline nav (page.js has its own nav duplicate; we skip it and use <Navbar>) 
     nav: {
       position: "fixed",
       top: 0,

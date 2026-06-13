@@ -7,9 +7,9 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "../context/ThemeContext";
 import { useResponsive } from "../hooks/useResponsive";
 
-// ─── Shared style tokens ─────────────────────────────────────────────────────
+// Shared style tokens
 const S = {
-  // ── Landing navbar ──────────────────────────────────────────────────────────
+  // Landing navbar 
   landingNav: {
     position: "fixed",
     top: 0,
@@ -112,7 +112,7 @@ const S = {
     transition: "all var(--transition-fast)",
   },
 
-  // ── Mobile Drawer ────────────────────────────────────────────────────────────
+  // Mobile Drawer 
   mobileOverlay: {
     position: "fixed",
     inset: 0,
@@ -190,7 +190,7 @@ const S = {
     marginBottom: 16,
   },
 
-  // ── Dashboard navbar ─────────────────────────────────────────────────────────
+  // Dashboard navbar
   navbar: {
     position: "sticky",
     top: 0,
@@ -303,7 +303,7 @@ export default function Navbar({ variant = "landing" }) {
 
   const closeDrawer = () => setDrawerOpen(false);
 
-  // ─── Landing Page Navbar ────────────────────────────────────────────────────
+  // Landing Page Navbar
   if (variant === "landing") {
     const showHamburger = isMobile || isTablet;
 
@@ -433,7 +433,7 @@ export default function Navbar({ variant = "landing" }) {
     );
   }
 
-  // ─── Dashboard / App Navbar ─────────────────────────────────────────────────
+  // Dashboard / App Navbar
   return (
     <header style={S.navbar}>
       <Link href="/" style={S.navBrand} title="Back to Home">

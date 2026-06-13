@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 
 /**
  * useResponsive — returns breakpoint booleans based on window width.
- *
  * Breakpoints:
  *   isMobile  : width <= 640px
  *   isTablet  : width > 640px && width <= 1024px

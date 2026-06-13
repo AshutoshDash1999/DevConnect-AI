@@ -139,7 +139,7 @@ input, textarea, button, div, a, span, p, h1, h2, h3, h4, h5, h6 {
   66%       { transform: translate(-20px, 10px) scale(0.95); }
 }
 
-/* ── Mobile & Touch Improvements ──────────────────────────────────────────── */
+/* Mobile & Touch Improvements */
 
 /* Improve tap responsiveness on mobile */
 button, a, [role="button"] {
@@ -165,7 +165,6 @@ html {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent text size adjustment on orientation change (iOS) */
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -179,7 +178,6 @@ html {
   display: none;
 }
 
-/* Mobile bottom navigation */
 .mobile-bottom-nav {
   position: fixed;
   bottom: 0;

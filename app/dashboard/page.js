@@ -6,6 +6,8 @@ import { useEffect, useState, useMemo } from "react";
 import Navbar from "../../components/Navbar";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import CodeEditorModal from "../../components/CodeEditorModal";
+import SavedPosts from "../../components/SavedPosts";
+import FeatureTour from "../../components/FeatureTour";
 import { useAuth } from "../../context/AuthContext";
 import { useResponsive } from "../../hooks/useResponsive";
 import { db } from "../../lib/firebase";
@@ -15,14 +17,16 @@ import {
   addDoc,
   deleteDoc,
   updateDoc,
+  setDoc,
   doc,
   query,
+  where,
   orderBy,
   onSnapshot,
   serverTimestamp,
   arrayUnion,
   arrayRemove,
-} from "firebase/firestore";
+} from "firebase/firestore";          // imported 'where' for raeltime active member
 
 const S = {
   appContainer: {
@@ -58,6 +62,13 @@ const S = {
     fontWeight: 500,
     textDecoration: "none",
     transition: "all var(--transition-fast)",
+    border: "none",
+    background: "transparent",
+    width: "100%",
+    textAlign: "left",
+    fontSize: "inherit",
+    fontFamily: "inherit",
+    cursor: "pointer",
   },
   sidebarNavItemLinkActive: {
     display: "flex",
@@ -69,6 +80,12 @@ const S = {
     fontWeight: 600,
     textDecoration: "none",
     backgroundColor: "var(--accent-primary-alpha)",
+    border: "none",
+    width: "100%",
+    textAlign: "left",
+    fontSize: "inherit",
+    fontFamily: "inherit",
+    cursor: "pointer",
   },
   sidebarFooterCard: {
     backgroundColor: "var(--bg-secondary)",
@@ -337,6 +354,19 @@ const S = {
     padding: "6px 10px",
     borderRadius: "var(--radius-sm)",
   },
+  btnActionActive: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    background: "transparent",
+    border: "none",
+    color: "var(--accent-primary)",
+    cursor: "pointer",
+    fontSize: "0.85rem",
+    fontWeight: 600,
+    padding: "6px 10px",
+    borderRadius: "var(--radius-sm)",
+  },
   btnActionDanger: {
     display: "flex",
     alignItems: "center",
@@ -515,6 +545,8 @@ const S = {
   },
 };
 
+const FEATURE_TOUR_KEY = "devconnect_feature_tour_seen";
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { isMobile, isTablet } = useResponsive();
@@ -529,10 +561,18 @@ export default function Dashboard() {
   const [commentDraft, setCommentDraft] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState("");
+  const[activeMembers, setActiveMembers] = useState([]);                      //for active members
   // Track which comment is being edited: { postId, createdAt }
   const [showCodeEditor, setShowCodeEditor] = useState(false);
   const [editingComment, setEditingComment] = useState(null);
   const [editingCommentDraft, setEditingCommentDraft] = useState("");
+
+  // ── Saved posts ──────────────────────────────────────────────────────────
+  const [savedPostIds, setSavedPostIds] = useState([]);
+  const [showSavedPosts, setShowSavedPosts] = useState(false);
+
+  // ── Feature tour ─────────────────────────────────────────────────────────
+  const [showFeatureTour, setShowFeatureTour] = useState(false);
 
   const availableTags = [
     "#react", "#nextjs", "#javascript", "#typescript",
@@ -540,6 +580,27 @@ export default function Dashboard() {
     "#rust", "#go", "#ai-agents", "#machine-learning",
     "#css", "#devops", "#docker", "#database",
   ];
+
+  // Show the feature tour automatically on a user's first visit
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem(FEATURE_TOUR_KEY);
+      if (!seen) {
+        setShowFeatureTour(true);
+      }
+    } catch {
+      // localStorage unavailable (e.g. SSR) - ignore
+    }
+  }, []);
+
+  const closeFeatureTour = () => {
+    setShowFeatureTour(false);
+    try {
+      localStorage.setItem(FEATURE_TOUR_KEY, "true");
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"));
@@ -553,6 +614,44 @@ export default function Dashboard() {
         setError("Failed to load posts.");
       }
     );
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to the current user's saved post IDs (stored on users/{uid})
+  useEffect(() => {
+    if (!user) {
+      setSavedPostIds([]);
+      return;
+    }
+    const unsubscribe = onSnapshot(
+      doc(db, "users", user.uid),
+      (snap) => {
+        const data = snap.data();
+        setSavedPostIds(data?.savedPosts || []);
+      },
+      (err) => {
+        console.error(err);
+      }
+    );
+    return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {                                                                               //Added new UseEffect
+    const  membersQuery = query(
+      collection(db, "users"),
+      where("isOnline", "==", true)
+    );
+
+    const unsubscribe = onSnapshot(
+      membersQuery,
+      (snapshot) => {
+        setActiveMembers(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (err) => {
+        console.error(err);
+      }
+    );
+
     return () => unsubscribe();
   }, []);
 
@@ -582,6 +681,29 @@ export default function Dashboard() {
         new: newToday[tag] ? `+${newToday[tag]} new today` : "No new posts today",
       }));
   }, [posts]);
+
+  // ── Mobile filter: All Posts | My Posts | Trending | Recent ───────────────
+  // Desktop uses the existing sidebar nav — this is mobile-only.
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const filteredPosts = useMemo(() => {
+    switch (activeFilter) {
+      case "mine":
+        return posts.filter((p) => p.uid === user?.uid);
+      case "trending":
+        return [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+      case "recent": {
+        const since = Date.now() - 24 * 60 * 60 * 1000; // last 24 h
+        const recent = posts.filter((p) => {
+          const ts = p.timestamp?.toDate ? p.timestamp.toDate().getTime() : 0;
+          return ts >= since;
+        });
+        return recent.length > 0 ? recent : posts.slice(0, 10);
+      }
+      default:
+        return posts; // "all"
+    }
+  }, [posts, activeFilter, user?.uid]);
 
   // ── Post actions ────────────────────────────────────────────────────────────
 
@@ -644,6 +766,25 @@ export default function Dashboard() {
     } catch (err) {
       console.error(err);
       setError("Failed to update like. Please try again.");
+    }
+  };
+
+  // Toggle save/unsave a post for the current user.
+  // Saved post IDs are stored in users/{uid}.savedPosts (array of post IDs).
+  const handleToggleSave = async (postId) => {
+    if (!user) return;
+    const isSaved = savedPostIds.includes(postId);
+    try {
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          savedPosts: isSaved ? arrayRemove(postId) : arrayUnion(postId),
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update saved posts. Please try again.");
     }
   };
 
@@ -784,13 +925,12 @@ export default function Dashboard() {
     { icon: "🔖", label: "Saved" },
   ];
 
-  // ── Shared widget JSX (reused in both sidebar and inline mobile section) ──
+  // ── Shared widget JSX — uses live trendingTags & activeMembers from Firebase ──
   const RightWidgets = ({ inline }) => (
     <div style={{
       display: "flex",
-      flexDirection: inline ? "column" : "column",
+      flexDirection: "column",
       gap: 16,
-      // Horizontal scroll row on mobile
       ...(inline ? {
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
@@ -798,7 +938,7 @@ export default function Dashboard() {
       } : {}),
     }}>
       {/* AI Copilot promo */}
-      <div style={S.aiPromoWidget}>
+      <div id="ai-copilot-widget" style={S.aiPromoWidget}>
         <h3 style={S.widgetTitleAi}>
           <span>Code Review Copilot</span>
           <span style={S.pulsePoint} />
@@ -811,55 +951,68 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Trending Tags */}
-      <div style={S.sidebarWidget}>
+      {/* Trending Tags — live from Firebase posts */}
+      <div id="trending-tags-widget" style={S.sidebarWidget}>
         <h3 style={S.widgetTitle}>Trending Tags</h3>
         <div style={S.trendingList}>
-          {[
-            { tag: "#react", posts: "240 posts", new: "+24 new today" },
-            { tag: "#rust", posts: "182 posts", new: "+12 new today" },
-            { tag: "#ai-agents", posts: "110 posts", new: "+38 new today" },
-          ].map(({ tag, posts, new: newPosts }) => (
-            <div key={tag} style={S.trendingItem}>
-              <a href="#" style={S.trendingLink}>
-                <span>{tag}</span>
-                <span>{posts}</span>
-              </a>
-              <span style={S.trendingStats}>{newPosts}</span>
-            </div>
-          ))}
+          {trendingTags.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
+              No tags yet — be the first to tag a post!
+            </p>
+          ) : (
+            trendingTags.map(({ tag, posts, new: newPosts }) => (
+              <div key={tag} style={S.trendingItem}>
+                <a href="#" style={S.trendingLink}>
+                  <span>{tag}</span>
+                  <span>{posts}</span>
+                </a>
+                <span style={S.trendingStats}>{newPosts}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Active Members */}
+      {/* Active Members — real-time from Firebase */}
       <div style={S.sidebarWidget}>
         <h3 style={S.widgetTitle}>Active Members</h3>
         <div style={S.membersList}>
-          {[
-            { initials: "SJ", name: "Sarah Jenkins", role: "Vercel", bg: "linear-gradient(135deg, #ec4899, #f43f5e)" },
-            { initials: "ER", name: "Elena Rostova", role: "AetherDB", bg: "linear-gradient(135deg, #10b981, #059669)" },
-          ].map(({ initials, name, role, bg }) => (
-            <div key={name} style={S.memberItem}>
-              <div style={S.memberMeta}>
-                <div style={{
-                  width: 28, height: 28, fontSize: "0.75rem",
-                  background: bg, borderRadius: "var(--radius-full)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "#000", fontWeight: 700,
-                }}>
-                  {initials}
+          {activeMembers.length === 0 ? (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>No members online.</p>
+          ) : (
+            activeMembers.map((member) => {
+              const name = member.displayName || member.email || "Anonymous";
+              const initials = name
+                .split(" ")
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase();
+              return (
+                <div key={member.id} style={S.memberItem}>
+                  <div style={S.memberMeta}>
+                    <div style={{
+                      width: 28, height: 28, fontSize: "0.75rem",
+                      background: "linear-gradient(135deg, #10b981, #059669)",
+                      borderRadius: "var(--radius-full)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#000", fontWeight: 700,
+                    }}>
+                      {initials}
+                    </div>
+                    <div>
+                      <div style={S.memberName}>{name}</div>
+                      <div style={S.memberRole}>{member.email}</div>
+                    </div>
+                  </div>
+                  <div style={S.memberStatus}>
+                    <span style={S.statusDotOnline} />
+                    <span>Online</span>
+                  </div>
                 </div>
-                <div>
-                  <div style={S.memberName}>{name}</div>
-                  <div style={S.memberRole}>{role}</div>
-                </div>
-              </div>
-              <div style={S.memberStatus}>
-                <span style={S.statusDotOnline} />
-                <span>Online</span>
-              </div>
-            </div>
-          ))}
+              );
+            })
+          )}
         </div>
       </div>
     </div>
@@ -872,7 +1025,7 @@ export default function Dashboard() {
           <Navbar variant="dashboard" />
 
           <div style={mainLayout}>
-            {/* ── Left Sidebar — desktop only ───────────────────────────── */}
+            {/* ── Left Sidebar — desktop only (bottom nav used on mobile/tablet) ── */}
             {!isMobile && !isTablet && (
               <aside style={S.leftSidebar}>
                 <ul style={S.sidebarNavList}>
@@ -881,20 +1034,37 @@ export default function Dashboard() {
                     { icon: "📈", label: "Trending" },
                     { icon: "❔", label: "Questions" },
                     { icon: "👥", label: "Collaborations" },
-                    { icon: "🔖", label: "Saved Posts" },
                   ].map(({ icon, label, active }) => (
                     <li key={label}>
-                      <a href="#" style={active ? S.sidebarNavItemLinkActive : S.sidebarNavItemLink}>
+                      <button style={active ? S.sidebarNavItemLinkActive : S.sidebarNavItemLink}>
                         <span>{icon}</span>
                         <span>{label}</span>
-                      </a>
+                      </button>
                     </li>
                   ))}
                   <li>
-                    <a href="/" style={S.sidebarNavItemLink}>
+                    <button
+                      id="saved-posts-nav"
+                      style={S.sidebarNavItemLink}
+                      onClick={() => setShowSavedPosts(true)}
+                    >
+                      <span>🔖</span>
+                      <span>Saved Posts</span>
+                      {savedPostIds.length > 0 && (
+                        <span style={{ marginLeft: "auto", fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                          {savedPostIds.length}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      style={S.sidebarNavItemLink}
+                      onClick={() => setShowFeatureTour(true)}
+                    >
                       <span>ℹ️</span>
                       <span>Features Tour</span>
-                    </a>
+                    </button>
                   </li>
                 </ul>
                 <div style={S.sidebarFooterCard}>
@@ -911,7 +1081,7 @@ export default function Dashboard() {
             {/* ── Feed Column ──────────────────────────────────────────── */}
             <section style={S.feedColumn}>
               {/* Composer */}
-              <div style={S.composerCard}>
+              <div id="composer-card" style={S.composerCard}>
                 <div style={S.composerHeader}>
                   <div style={S.avatar}>
                     {user?.displayName?.charAt(0)?.toUpperCase() || "ME"}
@@ -926,7 +1096,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div style={S.composerTagsInput}>
+                <div id="composer-tags" style={S.composerTagsInput}>
                   {availableTags.map((tag) => (
                     <span
                       key={tag}
@@ -1012,6 +1182,7 @@ export default function Dashboard() {
 
                   {/* AI Draft toggle — marginRight:auto pushes Post button to far right */}
                   <label
+                    id="ai-draft-toggle"
                     style={{ ...S.aiHelperToggle, marginRight: "auto" }}
                     onClick={() => setShowAiDraft((prev) => !prev)}
                   >
@@ -1059,266 +1230,349 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Feed filters */}
-              <div style={S.feedFiltersBar}>
-                {["Latest Feed", "Trending", "Questions", "Collaborations"].map((tab, i) => (
-                  <button key={tab} style={i === 0 ? S.filterTabActive : S.filterTab}>{tab}</button>
-                ))}
-              </div>
+              {/* ── Mobile-only filter pill bar ─────────────────────────── */}
+              {isMobile && (
+                <div style={{
+                  display: "flex",
+                  gap: 8,
+                  overflowX: "auto",
+                  paddingBottom: 4,
+                  msOverflowStyle: "none",
+                  scrollbarWidth: "none",
+                }}>
+                  {[
+                    { key: "all",      label: "All Posts", icon: "▦"  },
+                    { key: "mine",     label: "My Posts",  icon: "👤" },
+                    { key: "trending", label: "Trending",  icon: "🔥" },
+                    { key: "recent",   label: "Recent",    icon: "🕐" },
+                  ].map(({ key, label, icon }) => {
+                    const isActive = activeFilter === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setActiveFilter(key)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 5,
+                          flexShrink: 0,
+                          padding: "7px 14px",
+                          borderRadius: "var(--radius-full)",
+                          border: isActive
+                            ? "1px solid var(--accent-primary)"
+                            : "1px solid var(--border-color)",
+                          backgroundColor: isActive
+                            ? "var(--accent-primary-alpha)"
+                            : "var(--bg-secondary)",
+                          color: isActive
+                            ? "var(--accent-primary)"
+                            : "var(--text-secondary)",
+                          fontWeight: isActive ? 700 : 500,
+                          fontSize: "0.8rem",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          transition: "all 0.15s ease",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <span>{icon}</span>
+                        <span>{label}</span>
+                        {isActive && key !== "all" && (
+                          <span style={{
+                            marginLeft: 2,
+                            background: "var(--accent-primary)",
+                            color: "#000",
+                            borderRadius: "var(--radius-full)",
+                            fontSize: "0.65rem",
+                            fontWeight: 700,
+                            padding: "1px 6px",
+                          }}>
+                            {filteredPosts.length}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Feed filters — desktop only (existing tabs, unchanged) */}
+              {!isMobile && (
+                <div style={S.feedFiltersBar}>
+                  {["Latest Feed", "Trending", "Questions", "Collaborations"].map((tab, i) => (
+                    <button key={tab} style={i === 0 ? S.filterTabActive : S.filterTab}>{tab}</button>
+                  ))}
+                </div>
+              )}
 
               {/* Posts */}
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                {posts.length === 0 ? (
-                  <p style={{ color: "var(--text-muted)" }}>No posts yet. Create the first post!</p>
+                {filteredPosts.length === 0 ? (
+                  <p style={{ color: "var(--text-muted)" }}>
+                    {activeFilter === "mine"
+                      ? "You haven't posted anything yet."
+                      : activeFilter === "recent"
+                      ? "No posts in the last 24 hours."
+                      : "No posts yet. Create the first post!"}
+                  </p>
                 ) : (
-                  posts.map((post) => (
-                    <article style={S.discussionCard} key={post.id}>
-                      <div style={S.cardHeader}>
-                        <div style={S.authorInfo}>
-                          <div style={S.authorAvatar}>
-                            {post.displayName?.charAt(0)?.toUpperCase() || "U"}
+                  filteredPosts.map((post, postIndex) => {
+                    const isSaved = savedPostIds.includes(post.id);
+                    return (
+                      <article style={S.discussionCard} key={post.id}>
+                        <div style={S.cardHeader}>
+                          <div style={S.authorInfo}>
+                            <div style={S.authorAvatar}>
+                              {post.displayName?.charAt(0)?.toUpperCase() || "U"}
+                            </div>
+                            <div style={S.authorMeta}>
+                              <span style={S.authorName}>{post.displayName || "Anonymous User"}</span>
+                              <span style={S.authorTitle}>Community Member</span>
+                            </div>
                           </div>
-                          <div style={S.authorMeta}>
-                            <span style={S.authorName}>{post.displayName || "Anonymous User"}</span>
-                            <span style={S.authorTitle}>Community Member</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={S.categoryTag}>Discussion</span>
+                            <span style={S.postTimestamp}>
+                              {post.timestamp?.toDate
+                                ? post.timestamp.toDate().toLocaleString()
+                                : "Just now"}
+                              {post.edited ? " (edited)" : ""}
+                            </span>
                           </div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={S.categoryTag}>Discussion</span>
-                          <span style={S.postTimestamp}>
-                            {post.timestamp?.toDate
-                              ? post.timestamp.toDate().toLocaleString()
-                              : "Just now"}
-                            {post.edited ? " (edited)" : ""}
-                          </span>
-                        </div>
-                      </div>
 
-                      <h2 style={S.postTitle}>Community Discussion</h2>
+                        <h2 style={S.postTitle}>Community Discussion</h2>
 
-                      {editingId === post.id ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          <textarea
-                            style={S.composerTextarea}
-                            value={editContent}
-                            onChange={(e) => setEditContent(e.target.value)}
-                          />
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button style={S.btnPost} onClick={() => handleSaveEdit(post.id)}>Save</button>
-                            <button style={S.btnAction} onClick={cancelEdit}>Cancel</button>
+                        {editingId === post.id ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <textarea
+                              style={S.composerTextarea}
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                            />
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button style={S.btnPost} onClick={() => handleSaveEdit(post.id)}>Save</button>
+                              <button style={S.btnAction} onClick={cancelEdit}>Cancel</button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div style={S.postBody}>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              code({ className, children, ...props }) {
-                                const isInline = !className;
-                                return isInline ? (
-                                  <code
-                                    style={{
-                                      background: "var(--bg-primary)",
-                                      padding: "2px 6px",
-                                      borderRadius: 4,
-                                      fontSize: "0.85em",
-                                    }}
-                                    {...props}
-                                  >
-                                    {children}
-                                  </code>
-                                ) : (
-                                  <pre
-                                    style={{
-                                      background: "var(--bg-primary)",
-                                      border: "1px solid var(--border-color)",
-                                      borderRadius: "var(--radius-md)",
-                                      padding: 12,
-                                      overflowX: "auto",
-                                      fontSize: "0.85em",
-                                    }}
-                                  >
-                                    <code className={className} {...props}>
+                        ) : (
+                          <div style={S.postBody}>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                code({ className, children, ...props }) {
+                                  const isInline = !className;
+                                  return isInline ? (
+                                    <code
+                                      style={{
+                                        background: "var(--bg-primary)",
+                                        padding: "2px 6px",
+                                        borderRadius: 4,
+                                        fontSize: "0.85em",
+                                      }}
+                                      {...props}
+                                    >
                                       {children}
                                     </code>
-                                  </pre>
-                                );
-                              },
-                              p({ children }) {
-                                return <p style={{ margin: "0 0 10px 0", lineHeight: 1.6 }}>{children}</p>;
-                              },
-                              h1({ children }) {
-                                return <h3 style={{ margin: "12px 0 6px" }}>{children}</h3>;
-                              },
-                              h2({ children }) {
-                                return <h3 style={{ margin: "12px 0 6px" }}>{children}</h3>;
-                              },
-                              h3({ children }) {
-                                return <h4 style={{ margin: "10px 0 6px" }}>{children}</h4>;
-                              },
-                              ul({ children }) {
-                                return <ul style={{ paddingLeft: 20, margin: "0 0 10px 0" }}>{children}</ul>;
-                              },
-                              ol({ children }) {
-                                return <ol style={{ paddingLeft: 20, margin: "0 0 10px 0" }}>{children}</ol>;
-                              },
-                              li({ children }) {
-                                return <li style={{ marginBottom: 4 }}>{children}</li>;
-                              },
-                            }}
-                          >
-                            {post.content}
-                          </ReactMarkdown>
-                        </div>
-                      )}
-
-                      <div style={S.postTags}>
-                        {post.tags && post.tags.length > 0 ? (
-                          post.tags.map((tag) => (
-                            <a href="#" style={S.postTag} key={tag}>{tag}</a>
-                          ))
-                        ) : (
-                          <a href="#" style={S.postTag}>#community</a>
-                        )}
-                      </div>
-
-                      <div style={S.postActions}>
-                        <div style={S.postActionsGroup}>
-                          <button style={S.btnAction} onClick={() => handleToggleLike(post)}>
-                            {(post.likedBy || []).includes(user?.uid) ? "❤️" : "♡"}{" "}
-                            <span>{post.likes || 0}</span> Likes
-                          </button>
-                          <button style={S.btnAction} onClick={() => toggleComments(post.id)}>
-                            💬 <span>{post.comments?.length || 0}</span> Comments
-                          </button>
-                        </div>
-                        <button style={S.btnAction}>🔖 Save</button>
-                        {user?.uid === post.uid && (
-                          <div style={{ display: "flex", gap: 4 }}>
-                            <button style={S.btnAction} onClick={() => startEdit(post)}>✏️ Edit</button>
-                            <button style={S.btnAction} onClick={() => handleDeletePost(post.id)}>🗑️ Delete</button>
+                                  ) : (
+                                    <pre
+                                      style={{
+                                        background: "var(--bg-primary)",
+                                        border: "1px solid var(--border-color)",
+                                        borderRadius: "var(--radius-md)",
+                                        padding: 12,
+                                        overflowX: "auto",
+                                        fontSize: "0.85em",
+                                      }}
+                                    >
+                                      <code className={className} {...props}>
+                                        {children}
+                                      </code>
+                                    </pre>
+                                  );
+                                },
+                                p({ children }) {
+                                  return <p style={{ margin: "0 0 10px 0", lineHeight: 1.6 }}>{children}</p>;
+                                },
+                                h1({ children }) {
+                                  return <h3 style={{ margin: "12px 0 6px" }}>{children}</h3>;
+                                },
+                                h2({ children }) {
+                                  return <h3 style={{ margin: "12px 0 6px" }}>{children}</h3>;
+                                },
+                                h3({ children }) {
+                                  return <h4 style={{ margin: "10px 0 6px" }}>{children}</h4>;
+                                },
+                                ul({ children }) {
+                                  return <ul style={{ paddingLeft: 20, margin: "0 0 10px 0" }}>{children}</ul>;
+                                },
+                                ol({ children }) {
+                                  return <ol style={{ paddingLeft: 20, margin: "0 0 10px 0" }}>{children}</ol>;
+                                },
+                                li({ children }) {
+                                  return <li style={{ marginBottom: 4 }}>{children}</li>;
+                                },
+                              }}
+                            >
+                              {post.content}
+                            </ReactMarkdown>
                           </div>
                         )}
-                      </div>
 
-                      {/* ── Comments panel ──────────────────────────────── */}
-                      {openCommentsFor === post.id && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4, borderTop: "1px solid var(--border-color)", paddingTop: 14 }}>
-
-                          {/* Comment list */}
-                          {(post.comments || []).length === 0 ? (
-                            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
-                              No comments yet. Be the first!
-                            </p>
+                        <div style={S.postTags}>
+                          {post.tags && post.tags.length > 0 ? (
+                            post.tags.map((tag) => (
+                              <a href="#" style={S.postTag} key={tag}>{tag}</a>
+                            ))
                           ) : (
-                            (post.comments || [])
-                              .slice()
-                              .sort((a, b) => a.createdAt - b.createdAt)
-                              .map((c) => {
-                                const isEditingThis =
-                                  editingComment?.postId === post.id &&
-                                  editingComment?.createdAt === c.createdAt;
-                                const isOwner = user?.uid === c.uid;
-
-                                return (
-                                  <div key={`${c.uid}-${c.createdAt}`} style={S.commentItem}>
-                                    <div style={S.commentHeader}>
-                                      <span style={S.commentAuthor}>{c.displayName}</span>
-                                      <div style={S.commentMeta}>
-                                        <span>
-                                          {new Date(c.createdAt).toLocaleString(undefined, {
-                                            month: "short", day: "numeric",
-                                            hour: "2-digit", minute: "2-digit",
-                                          })}
-                                        </span>
-                                        {c.edited && (
-                                          <span style={{ fontStyle: "italic" }}>(edited)</span>
-                                        )}
-                                        {isOwner && !isEditingThis && (
-                                          <>
-                                            <button
-                                              style={S.btnActionDanger}
-                                              onClick={() => startEditComment({ ...c, _postId: post.id })}
-                                              title="Edit comment"
-                                            >
-                                              ✏️
-                                            </button>
-                                            <button
-                                              style={S.btnActionDanger}
-                                              onClick={() => handleDeleteComment(post, c)}
-                                              title="Delete comment"
-                                            >
-                                              🗑️
-                                            </button>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {isEditingThis ? (
-                                      <>
-                                        <textarea
-                                          style={S.commentEditTextarea}
-                                          value={editingCommentDraft}
-                                          onChange={(e) => setEditingCommentDraft(e.target.value)}
-                                          autoFocus
-                                        />
-                                        <div style={S.commentEditActions}>
-                                          <button
-                                            style={S.btnSm}
-                                            onClick={() => handleSaveCommentEdit(post, c)}
-                                          >
-                                            Save
-                                          </button>
-                                          <button style={S.btnSmGhost} onClick={cancelEditComment}>
-                                            Cancel
-                                          </button>
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <p style={{ ...S.commentBody, margin: 0 }}>{c.content}</p>
-                                    )}
-                                  </div>
-                                );
-                              })
+                            <a href="#" style={S.postTag}>#community</a>
                           )}
+                        </div>
 
-                          {/* New comment input */}
-                          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                            <input
-                              style={{
-                                flex: 1,
-                                background: "var(--bg-primary)",
-                                border: "1px solid var(--border-color)",
-                                borderRadius: "var(--radius-md)",
-                                color: "var(--text-primary)",
-                                outline: "none",
-                                fontSize: "0.875rem",
-                                fontFamily: "inherit",
-                                padding: "8px 12px",
-                              }}
-                              placeholder="Write a comment…"
-                              value={commentDraft}
-                              onChange={(e) => setCommentDraft(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
-                                  e.preventDefault();
-                                  handleAddComment(post);
-                                }
-                              }}
-                            />
-                            <button
-                              style={commentDraft.trim() ? S.btnPost : S.btnPostDisabled}
-                              disabled={!commentDraft.trim()}
-                              onClick={() => handleAddComment(post)}
-                            >
-                              Post
+                        <div id={postIndex === 0 ? "post-actions-0" : undefined} style={S.postActions}>
+                          <div style={S.postActionsGroup}>
+                            <button style={S.btnAction} onClick={() => handleToggleLike(post)}>
+                              {(post.likedBy || []).includes(user?.uid) ? "❤️" : "♡"}{" "}
+                              <span>{post.likes || 0}</span> Likes
+                            </button>
+                            <button style={S.btnAction} onClick={() => toggleComments(post.id)}>
+                              💬 <span>{post.comments?.length || 0}</span> Comments
                             </button>
                           </div>
+                          <button
+                            style={isSaved ? S.btnActionActive : S.btnAction}
+                            onClick={() => handleToggleSave(post.id)}
+                            title={isSaved ? "Remove from saved" : "Save post"}
+                          >
+                            {isSaved ? "🔖 Saved" : "🔖 Save"}
+                          </button>
+                          {user?.uid === post.uid && (
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <button style={S.btnAction} onClick={() => startEdit(post)}>✏️ Edit</button>
+                              <button style={S.btnAction} onClick={() => handleDeletePost(post.id)}>🗑️ Delete</button>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </article>
-                  ))
+
+                        {/* ── Comments panel ──────────────────────────────── */}
+                        {openCommentsFor === post.id && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4, borderTop: "1px solid var(--border-color)", paddingTop: 14 }}>
+
+                            {/* Comment list */}
+                            {(post.comments || []).length === 0 ? (
+                              <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
+                                No comments yet. Be the first!
+                              </p>
+                            ) : (
+                              (post.comments || [])
+                                .slice()
+                                .sort((a, b) => a.createdAt - b.createdAt)
+                                .map((c) => {
+                                  const isEditingThis =
+                                    editingComment?.postId === post.id &&
+                                    editingComment?.createdAt === c.createdAt;
+                                  const isOwner = user?.uid === c.uid;
+
+                                  return (
+                                    <div key={`${c.uid}-${c.createdAt}`} style={S.commentItem}>
+                                      <div style={S.commentHeader}>
+                                        <span style={S.commentAuthor}>{c.displayName}</span>
+                                        <div style={S.commentMeta}>
+                                          <span>
+                                            {new Date(c.createdAt).toLocaleString(undefined, {
+                                              month: "short", day: "numeric",
+                                              hour: "2-digit", minute: "2-digit",
+                                            })}
+                                          </span>
+                                          {c.edited && (
+                                            <span style={{ fontStyle: "italic" }}>(edited)</span>
+                                          )}
+                                          {isOwner && !isEditingThis && (
+                                            <>
+                                              <button
+                                                style={S.btnActionDanger}
+                                                onClick={() => startEditComment({ ...c, _postId: post.id })}
+                                                title="Edit comment"
+                                              >
+                                                ✏️
+                                              </button>
+                                              <button
+                                                style={S.btnActionDanger}
+                                                onClick={() => handleDeleteComment(post, c)}
+                                                title="Delete comment"
+                                              >
+                                                🗑️
+                                              </button>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {isEditingThis ? (
+                                        <>
+                                          <textarea
+                                            style={S.commentEditTextarea}
+                                            value={editingCommentDraft}
+                                            onChange={(e) => setEditingCommentDraft(e.target.value)}
+                                            autoFocus
+                                          />
+                                          <div style={S.commentEditActions}>
+                                            <button
+                                              style={S.btnSm}
+                                              onClick={() => handleSaveCommentEdit(post, c)}
+                                            >
+                                              Save
+                                            </button>
+                                            <button style={S.btnSmGhost} onClick={cancelEditComment}>
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <p style={{ ...S.commentBody, margin: 0 }}>{c.content}</p>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                            )}
+
+                            {/* New comment input */}
+                            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                              <input
+                                style={{
+                                  flex: 1,
+                                  background: "var(--bg-primary)",
+                                  border: "1px solid var(--border-color)",
+                                  borderRadius: "var(--radius-md)",
+                                  color: "var(--text-primary)",
+                                  outline: "none",
+                                  fontSize: "0.875rem",
+                                  fontFamily: "inherit",
+                                  padding: "8px 12px",
+                                }}
+                                placeholder="Write a comment…"
+                                value={commentDraft}
+                                onChange={(e) => setCommentDraft(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleAddComment(post);
+                                  }
+                                }}
+                              />
+                              <button
+                                style={commentDraft.trim() ? S.btnPost : S.btnPostDisabled}
+                                disabled={!commentDraft.trim()}
+                                onClick={() => handleAddComment(post)}
+                              >
+                                Post
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })
                 )}
               </div>
               {/* ── Mobile-only: widgets inline below the feed ─────────── */}
@@ -1330,11 +1584,10 @@ export default function Dashboard() {
               
             </section>
 
-            {/* ── Right Sidebar — tablet & desktop ──────────────────────── */}
+            {/* ── Right Sidebar — tablet & desktop; widgets shown inline on mobile ── */}
             {!isMobile && (
               <aside style={{
                 ...S.rightSidebar,
-                // On tablet: not sticky, just a normal flow column
                 ...(isTablet ? { position: "relative", top: "auto", height: "auto", overflowY: "visible" } : {}),
               }}>
                 <RightWidgets />
@@ -1378,6 +1631,17 @@ export default function Dashboard() {
         onClose={() => setShowCodeEditor(false)}
         onInsert={handleInsertCode}
       />
+
+      {/* Saved Posts Modal */}
+      {showSavedPosts && (
+        <SavedPosts
+          onClose={() => setShowSavedPosts(false)}
+          onUnsave={(postId) => handleToggleSave(postId)}
+        />
+      )}
+
+      {/* Feature Tour Overlay */}
+      {showFeatureTour && <FeatureTour onClose={closeFeatureTour} />}
     </ProtectedRoute>
   );
 }

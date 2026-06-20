@@ -299,6 +299,7 @@ export default function Dashboard() {
 const handleToggleCommentReaction = async (post, comment, emoji) => {
   if (!user) return;
   const reactions = comment.reactions || {};
+  
 
   // Find which emoji (if any) this user currently has on this comment
   const currentEmoji = Object.keys(reactions).find((e) =>

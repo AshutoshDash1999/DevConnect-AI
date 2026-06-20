@@ -37,13 +37,22 @@ const S = {
     display: "inline-flex",
     alignItems: "center",
     padding: "2px 8px",
-    backgroundColor: type === "question"
-      ? "rgba(251,146,60,0.12)"
-      : type === "collaboration"
-      ? "rgba(52,211,153,0.12)"
+    backgroundColor:
+      type === "question" ? "rgba(251,146,60,0.12)"
+      : type === "collaboration" ? "rgba(52,211,153,0.12)"
+      : type === "poll" ? "rgba(99,102,241,0.12)"
       : "var(--bg-primary)",
-    border: `1px solid ${type === "question" ? "rgba(251,146,60,0.4)" : type === "collaboration" ? "rgba(52,211,153,0.4)" : "var(--border-color)"}`,
-    color: type === "question" ? "#fb923c" : type === "collaboration" ? "#34d399" : "var(--text-secondary)",
+    border: `1px solid ${
+      type === "question" ? "rgba(251,146,60,0.4)"
+      : type === "collaboration" ? "rgba(52,211,153,0.4)"
+      : type === "poll" ? "rgba(99,102,241,0.4)"
+      : "var(--border-color)"
+    }`,
+    color:
+      type === "question" ? "#fb923c"
+      : type === "collaboration" ? "#34d399"
+      : type === "poll" ? "#818cf8"
+      : "var(--text-secondary)",
     borderRadius: "var(--radius-sm)",
     fontSize: "0.7rem",
     fontWeight: 600,
@@ -51,6 +60,13 @@ const S = {
     whiteSpace: "nowrap",
   }),
   postBody: { fontSize: "0.9rem", color: "var(--text-secondary)" },
+  pollQuestion: {
+    fontSize: "0.95rem",
+    fontWeight: 600,
+    color: "var(--text-primary)",
+    lineHeight: 1.5,
+    marginBottom: 2,
+  },
   postTags: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 },
   postTag: { color: "var(--accent-primary)", fontSize: "0.82rem", fontWeight: 500 },
   postActions: {
@@ -205,7 +221,110 @@ const S = {
     cursor: "pointer",
     fontFamily: "inherit",
   },
+  // Poll styles
+  pollContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+  pollOptionBtn: (voted) => ({
+    width: "100%",
+    textAlign: "left",
+    background: "none",
+    border: `1px solid ${voted ? "var(--accent-primary)" : "var(--border-color)"}`,
+    borderRadius: "var(--radius-md)",
+    cursor: "pointer",
+    padding: 0,
+    overflow: "hidden",
+    fontFamily: "inherit",
+    position: "relative",
+  }),
+  pollBarFill: (pct, voted) => ({
+    position: "absolute",
+    inset: 0,
+    width: `${pct}%`,
+    background: voted ? "var(--accent-primary-alpha)" : "rgba(255,255,255,0.04)",
+    borderRadius: "var(--radius-md)",
+    transition: "width 0.4s ease",
+  }),
+  pollOptionLabel: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "9px 12px",
+    fontSize: "0.85rem",
+    color: "var(--text-primary)",
+    fontWeight: 500,
+    zIndex: 1,
+  },
+  pollPct: {
+    fontSize: "0.75rem",
+    fontWeight: 700,
+    color: "var(--text-muted)",
+    minWidth: 32,
+    textAlign: "right",
+  },
+  pollMeta: {
+    fontSize: "0.72rem",
+    color: "var(--text-muted)",
+    marginTop: 2,
+  },
 };
+
+// ── Poll block ────────────────────────────────────────────────────────────────
+function PollBlock({ post, user, onVotePoll }) {
+  const options = post.pollOptions || [];
+  const votes = post.pollVotes || {};
+  const totalVotes = Object.values(votes).reduce((s, arr) => s + (arr?.length || 0), 0);
+
+  const userVotedIdx = options.findIndex((_, idx) =>
+    (votes[idx] || []).includes(user?.uid)
+  );
+  const hasVoted = userVotedIdx !== -1;
+
+  return (
+    <div style={S.pollContainer}>
+      {/* Poll question text */}
+      {post.content && (
+        <p style={S.pollQuestion}>{post.content}</p>
+      )}
+
+      {/* Poll options */}
+      {options.map((opt, idx) => {
+        const count = (votes[idx] || []).length;
+        const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+        const isMyVote = userVotedIdx === idx;
+
+        return (
+          <button
+            key={idx}
+            style={S.pollOptionBtn(isMyVote)}
+            onClick={() => onVotePoll && onVotePoll(post, idx)}
+            disabled={!user}
+            title={!user ? "Log in to vote" : ""}
+          >
+            <div style={S.pollBarFill(hasVoted ? pct : 0, isMyVote)} />
+            <div style={S.pollOptionLabel}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {isMyVote && (
+                  <span style={{ color: "var(--accent-primary)", fontSize: "0.7rem" }}>✓</span>
+                )}
+                {opt}
+              </span>
+              {hasVoted && <span style={S.pollPct}>{pct}%</span>}
+            </div>
+          </button>
+        );
+      })}
+
+      <div style={S.pollMeta}>
+        {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
+        {hasVoted && " · You voted"}
+      </div>
+    </div>
+  );
+}
 
 export default function PostCard({
   post,
@@ -238,17 +357,21 @@ export default function PostCard({
   onCancelEditComment,
   onSaveCommentEdit,
   onDeleteComment,
+  onVotePoll,
 }) {
   const postPhoto = getLivePhoto(post.uid, post.photoURL);
   const postName = getLiveName(post.uid, post.displayName);
   const type = post.postType || "discussion";
-  const typeLabel = type === "question" ? "Question" : type === "collaboration" ? "Collaborate" : "Discussion";
+  const typeLabel =
+    type === "question" ? "Question"
+    : type === "collaboration" ? "Collaborate"
+    : type === "poll" ? "Poll"
+    : "Discussion";
 
   return (
     <article
       id={`post-${post.id}`}
       style={{ ...S.discussionCard, ...(isHighlighted ? S.discussionCardHighlighted : {}) }}
-      key={post.id}
     >
       {/* Card Header */}
       <div style={S.cardHeader}>
@@ -281,7 +404,7 @@ export default function PostCard({
         </div>
       </div>
 
-      {/* Post Body or Edit Mode */}
+      {/* Post Body / Poll / Edit Mode */}
       {editingId === post.id ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <textarea
@@ -294,6 +417,9 @@ export default function PostCard({
             <button style={S.btnAction} onClick={onCancelEdit}>Cancel</button>
           </div>
         </div>
+      ) : type === "poll" ? (
+        // Poll renders its own question + options inside PollBlock
+        <PollBlock post={post} user={user} onVotePoll={onVotePoll} />
       ) : (
         <div style={S.postBody}>
           <ReactMarkdown
@@ -329,9 +455,11 @@ export default function PostCard({
       {/* Post Actions */}
       <div id={postIndex === 0 ? "post-actions-0" : undefined} style={S.postActions}>
         <div style={S.postActionsGroup}>
-          <button style={S.btnAction} onClick={() => onToggleLike(post)}>
-            {(post.likedBy || []).includes(user?.uid) ? "❤️" : "♡"} {post.likes || 0}
-          </button>
+          {type !== "poll" && (
+            <button style={S.btnAction} onClick={() => onToggleLike(post)}>
+              {(post.likedBy || []).includes(user?.uid) ? "❤️" : "♡"} {post.likes || 0}
+            </button>
+          )}
           <button style={S.btnAction} onClick={() => onToggleComments(post.id)}>
             💬 {post.comments?.length || 0}
           </button>
@@ -344,7 +472,9 @@ export default function PostCard({
         </button>
         {user?.uid === post.uid && (
           <div style={{ display: "flex", gap: 2 }}>
-            <button style={S.btnAction} onClick={() => onStartEdit(post)}>✏️</button>
+            {type !== "poll" && (
+              <button style={S.btnAction} onClick={() => onStartEdit(post)}>✏️</button>
+            )}
             <button style={S.btnAction} onClick={() => onDeletePost(post.id)}>🗑️</button>
           </div>
         )}

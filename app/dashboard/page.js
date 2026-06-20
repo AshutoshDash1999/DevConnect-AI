@@ -639,6 +639,9 @@ const S = {
   },
 };
 
+const DEFAULT_EMOJIS = ["👍", "✅", "💡", "❤️"];
+const EXTRA_EMOJIS   = ["🔥", "😂", "😮", "🎉", "🙌", "💯", "🚀", "😢", "😡", "👀", "🤔", "⭐"];
+
 const FEATURE_TOUR_KEY = "devconnect_feature_tour_seen";
 
 const FEED_TABS = [
@@ -828,6 +831,7 @@ export default function Dashboard() {
   const router = useRouter();
 
   const [content, setContent] = useState("");
+  const [openPickerFor, setOpenPickerFor] = useState(null);
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState("");
   const [posting, setPosting] = useState(false);
@@ -880,6 +884,13 @@ export default function Dashboard() {
     setShowFeatureTour(false);
     try { localStorage.setItem(FEATURE_TOUR_KEY, "true"); } catch { }
   };
+
+  useEffect(() => {
+  if (!openPickerFor) return;
+  const close = () => setOpenPickerFor(null);
+  window.addEventListener("click", close);
+  return () => window.removeEventListener("click", close);
+}, [openPickerFor]);
 
   useEffect(() => {
     const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"));
@@ -1177,6 +1188,41 @@ export default function Dashboard() {
     }
     catch (err) { console.error(err); setError("Failed to edit comment."); }
   };
+const handleToggleCommentReaction = async (post, comment, emoji) => {
+  if (!user) return;
+  const postRef = doc(db, "posts", post.id);
+  const updatedComments = (post.comments || []).map((c) => {
+    if (c.uid === comment.uid && c.createdAt === comment.createdAt) {
+      const allEmojis = [...DEFAULT_EMOJIS, ...EXTRA_EMOJIS];
+      
+      // Find if user already reacted with any emoji on this comment
+      const currentEmoji = allEmojis.find((e) => (c.reactions?.[e] || []).includes(user.uid));
+      
+      // If clicking the same emoji they already reacted with → remove it (toggle off)
+      if (currentEmoji === emoji) {
+        return {
+          ...c,
+          reactions: {
+            ...c.reactions,
+            [emoji]: (c.reactions[emoji] || []).filter((id) => id !== user.uid),
+          },
+        };
+      }
+
+      // Build updated reactions: remove from old emoji (if any), add to new emoji
+      const updatedReactions = { ...c.reactions };
+      if (currentEmoji) {
+        updatedReactions[currentEmoji] = (updatedReactions[currentEmoji] || []).filter((id) => id !== user.uid);
+      }
+      updatedReactions[emoji] = [...(updatedReactions[emoji] || []), user.uid];
+
+      return { ...c, reactions: updatedReactions };
+    }
+    return c;
+  });
+  await updateDoc(postRef, { comments: updatedComments });
+};
+
   const handleDeleteComment = async (post, comment) => {
     if (!window.confirm("Delete this comment?")) return;
     const updatedComments = (post.comments || []).filter((c) => !(c.createdAt === comment.createdAt && c.uid === comment.uid));
@@ -1311,9 +1357,107 @@ export default function Dashboard() {
                           <button style={S.btnSmGhost} onClick={cancelEditComment}>Cancel</button>
                         </div>
                       </>
-                    ) : (
-                      <p style={{ ...S.commentBody, margin: 0 }}>{c.content}</p>
+                   ) : (
+  <>
+    <p style={{ ...S.commentBody, margin: 0 }}>{c.content}</p>
+    {/* ── Reaction Bar ── */}
+    {(() => {
+      const commentKey   = `${c.uid}-${c.createdAt}`;
+      const isPickerOpen = openPickerFor === commentKey;
+      const activeExtra  = Object.keys(c.reactions || {})
+        .filter((e) => !DEFAULT_EMOJIS.includes(e) && (c.reactions[e]?.length || 0) > 0);
+
+      return (
+        <div
+          style={{ position: "relative", marginTop: 6 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            {[...DEFAULT_EMOJIS, ...activeExtra].map((emoji) => {
+              const reactors   = c.reactions?.[emoji] || [];
+              const hasReacted = reactors.includes(user?.uid);
+              return (
+                <button
+                  key={emoji}
+                  onClick={() => handleToggleCommentReaction(post, c, emoji)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 3,
+                    padding: "2px 8px", borderRadius: 999,
+                    border: hasReacted ? "1px solid var(--accent-primary)" : "1px solid var(--border-color)",
+                    background: hasReacted ? "rgba(99,102,241,0.12)" : "transparent",
+                    color: hasReacted ? "var(--accent-primary)" : "var(--text-muted)",
+                    fontSize: "0.78rem", fontWeight: hasReacted ? 600 : 400,
+                    cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                  }}
+                >
+                  {emoji}
+                  {reactors.length > 0 && <span style={{ fontSize: "0.72rem" }}>{reactors.length}</span>}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setOpenPickerFor(isPickerOpen ? null : commentKey)}
+              style={{
+                padding: "2px 8px", borderRadius: 999, height: 22,
+                border: "1px solid var(--border-color)",
+                background: isPickerOpen ? "var(--accent-primary-alpha)" : "transparent",
+                color: isPickerOpen ? "var(--accent-primary)" : "var(--text-muted)",
+                fontSize: "0.72rem", fontWeight: 600,
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              {isPickerOpen ? "✕ Close" : "+ 😊"}
+            </button>
+          </div>
+
+          {isPickerOpen && (
+            <div style={{
+              position: "absolute", bottom: "calc(100% + 8px)", left: 0, zIndex: 50,
+              display: "grid", gridTemplateColumns: "repeat(6, 1fr)",
+              gap: 4, padding: 10,
+              backgroundColor: "var(--bg-secondary)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "var(--radius-md)",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+              minWidth: 210,
+            }}>
+              {EXTRA_EMOJIS.map((emoji) => {
+                const reactors   = c.reactions?.[emoji] || [];
+                const hasReacted = reactors.includes(user?.uid);
+                return (
+                  <button
+                    key={emoji}
+                    title={`${emoji}${reactors.length > 0 ? ` · ${reactors.length}` : ""}`}
+                    onClick={() => { handleToggleCommentReaction(post, c, emoji); setOpenPickerFor(null); }}
+                    style={{
+                      position: "relative",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: 32, height: 32, borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      background: hasReacted ? "var(--accent-primary-alpha)" : "transparent",
+                      fontSize: "1.1rem", cursor: "pointer",
+                    }}
+                  >
+                    {emoji}
+                    {reactors.length > 0 && (
+                      <span style={{
+                        position: "absolute", top: 0, right: 0,
+                        fontSize: "0.52rem", fontWeight: 700,
+                        color: "var(--accent-primary)",
+                        backgroundColor: "var(--bg-secondary)",
+                        borderRadius: 999, padding: "0 2px", lineHeight: 1.4,
+                      }}>{reactors.length}</span>
                     )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    })()}
+  </>
+)}
                   </div>
                 );
               })}

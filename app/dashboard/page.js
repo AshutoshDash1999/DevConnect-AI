@@ -69,6 +69,7 @@ export default function Dashboard() {
   // ── Feed / UI state ──────────────────────────────────────────────────────
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("latest");
+  const [activeTag, setActiveTag] = useState(null);
   const [activeMembers, setActiveMembers] = useState([]);
   const [usersCache, setUsersCache] = useState({});
   const [highlightedPostId, setHighlightedPostId] = useState(null);
@@ -295,10 +296,12 @@ const openProfile = useCallback((e, uid, storedName, storedPhoto) => {
 
   // ── Memoized derived feed data ────────────────────────────────────────────
   const filteredPosts = useMemo(() => {
-    if (activeTab === "questions") return posts.filter((p) => p.postType === "question");
-    if (activeTab === "collaboration") return posts.filter((p) => p.postType === "collaboration");
-    return posts;
-  }, [posts, activeTab]);
+    let result = posts;
+    if (activeTab === "questions") result = posts.filter((p) => p.postType === "question");
+    else if (activeTab === "collaboration") result = posts.filter((p) => p.postType === "collaboration");
+    if (activeTag) result = result.filter((p) => (p.tags || []).includes(activeTag));
+    return result;
+  }, [posts, activeTab, activeTag]);
 
   const trendingPosts = useMemo(() => {
     const cutoff = Date.now() - 48 * 60 * 60 * 1000;
@@ -506,7 +509,12 @@ const openProfile = useCallback((e, uid, storedName, storedPhoto) => {
 
               <FeedColumn {...feedColumnProps} />
 
-              <RightSidebar trendingTags={trendingTags} activeMembers={activeMembers} />
+              <RightSidebar 
+                  trendingTags={trendingTags} 
+                  activeMembers={activeMembers}
+                  activeTag={activeTag}
+                  onTagClick={(tag) => setActiveTag((prev) => prev === tag ? null : tag)}
+              />
             </div>
           )}
 

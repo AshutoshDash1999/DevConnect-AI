@@ -1,4 +1,6 @@
 "use client";
+import { useRouter } from "next/navigation";
+
 
 const S = {
   rightSidebar: {
@@ -106,6 +108,8 @@ const S = {
 };
 
 export default function RightSidebar({ trendingTags, activeMembers, activeTag, onTagClick }) {
+
+  const router = useRouter();
   return (
     <aside style={S.rightSidebar}>
       {/* AI Copilot widget */}
@@ -117,7 +121,12 @@ export default function RightSidebar({ trendingTags, activeMembers, activeTag, o
         <p style={S.aiPromoText}>
           Let AI review your code changes, suggest performance improvements, and write documentation snippets.
         </p>
-        <button style={S.btnAiCta}>Ask for AI Code Review</button>
+        <button
+          style={S.btnAiCta}
+          onClick={() => router.push("/code-review")}
+        >
+          Ask for AI Code Review
+        </button>
       </div>
 
       {/* Trending Tags widget */}

@@ -1,8 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function CodeReview() {
+
+  const router = useRouter();
+
   const [code, setCode] = useState('');
   const [isReviewing, setIsReviewing] = useState(false);
   const [review, setReview] = useState(null);
@@ -27,7 +31,7 @@ export default function CodeReview() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setReview(data.review);
       } else {
@@ -61,7 +65,25 @@ export default function CodeReview() {
   };
 
   return (
+
+
+
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px' }}>
+
+      <button
+        onClick={() => router.push('/dashboard')}
+        style={{
+          marginBottom: '20px',
+          padding: '10px 16px',
+          borderRadius: '8px',
+          border: 'none',
+          cursor: 'pointer',
+          background: '#374151',
+          color: 'white'
+        }}
+      >
+        ← Back to Dashboard
+      </button>
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #a855f7, #3b82f6)', color: 'white', padding: '8px 20px', borderRadius: '999px', fontSize: '14px', marginBottom: '16px' }}>
           <span>🤖</span>
@@ -157,7 +179,7 @@ export default function CodeReview() {
               </button>
             )}
           </div>
-          
+
           {!review ? (
             <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
               <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔍</div>

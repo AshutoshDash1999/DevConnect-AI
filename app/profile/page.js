@@ -15,8 +15,9 @@ import {
   doc,
   orderBy,
   getDoc,
+  deleteDoc,
 } from "firebase/firestore";
-import { updateProfile } from "firebase/auth";
+import { updateProfile, deleteUser } from "firebase/auth";
 
 function useIsMobile(breakpoint = 640) {
   const [isMobile, setIsMobile] = useState(false);
@@ -137,6 +138,13 @@ const S = {
     color: "#ef4444", fontWeight: 600, fontSize: "0.95rem", cursor: "pointer",
     fontFamily: "inherit",
   },
+  btnDeleteAccount: {
+    width: "100%", padding: 12, background: "transparent",
+    border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "var(--radius-md)",
+    color: "rgba(239, 68, 68, 0.6)", fontWeight: 500, fontSize: "0.88rem",
+    cursor: "pointer", fontFamily: "inherit", marginTop: 8,
+    transition: "all 0.15s",
+  },
   successMsg: { color: "var(--accent-success)", fontSize: "0.82rem", margin: "6px 0 0 0" },
   errorMsg: { color: "#ef4444", fontSize: "0.82rem", margin: "6px 0 0 0" },
   postCard: {
@@ -221,6 +229,90 @@ function UserListModal({ title, uids, onClose }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Delete Account Confirmation Modal ─────────────────────────────────────────
+function DeleteAccountModal({ onConfirm, onClose, deleting, deleteError }) {
+  const [confirmText, setConfirmText] = useState("");
+  const canDelete = confirmText === "DELETE";
+
+  return (
+    <div style={S.modalOverlay} onClick={onClose}>
+      <div style={{ ...S.modalBox, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>⚠️</div>
+          <h3 style={{ color: "#ef4444", fontWeight: 700, fontSize: "1.1rem", margin: "0 0 6px 0" }}>
+            Delete Account
+          </h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0, lineHeight: 1.5 }}>
+            This action is <strong style={{ color: "var(--text-primary)" }}>permanent and irreversible</strong>.
+            Your profile, posts, and all data will be deleted forever.
+          </p>
+        </div>
+
+        {/* Warning box */}
+        <div style={{
+          background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.25)",
+          borderRadius: "var(--radius-md)", padding: "12px 14px", marginBottom: 18,
+        }}>
+          <p style={{ color: "#ef4444", fontSize: "0.8rem", margin: 0, lineHeight: 1.6 }}>
+            You will lose access to:<br />
+            • Your profile and bio<br />
+            • All your posts and comments<br />
+            • Your followers and following list<br />
+            • Your activity streak
+          </p>
+        </div>
+
+        {/* Confirmation input */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ ...S.infoLabel, display: "block", marginBottom: 6 }}>
+            Type <strong style={{ color: "#ef4444", fontStyle: "normal" }}>DELETE</strong> to confirm
+          </label>
+          <input
+            style={{
+              ...S.input,
+              borderColor: confirmText && !canDelete ? "rgba(239,68,68,0.5)" : "var(--border-color)",
+            }}
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="DELETE"
+            autoFocus
+          />
+        </div>
+
+        {deleteError && (
+          <p style={{ ...S.errorMsg, marginBottom: 12 }}>{deleteError}</p>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <button
+            onClick={() => canDelete && onConfirm()}
+            disabled={!canDelete || deleting}
+            style={{
+              width: "100%", padding: "11px 0",
+              background: canDelete ? "#ef4444" : "rgba(239,68,68,0.2)",
+              border: "none", borderRadius: "var(--radius-md)",
+              color: canDelete ? "#fff" : "rgba(239,68,68,0.5)",
+              fontWeight: 700, fontSize: "0.92rem", cursor: canDelete && !deleting ? "pointer" : "not-allowed",
+              fontFamily: "inherit", transition: "all 0.15s",
+            }}
+          >
+            {deleting ? "Deleting…" : "Yes, permanently delete my account"}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={deleting}
+            style={{ ...S.btnGhost, width: "100%", textAlign: "center" }}
+          >
+            Cancel, keep my account
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -511,9 +603,8 @@ function CollabBadge() {
   );
 }
 
-// ── NEW: Streak badge (view mode) ─────────────────────────────────────────────
+// ── Streak badge (view mode) ──────────────────────────────────────────────────
 function StreakBadge({ count }) {
-    
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 6,
@@ -682,6 +773,11 @@ export default function Profile() {
   const [myPosts, setMyPosts] = useState([]);
   const [postCount, setPostCount] = useState(0);
 
+  // ── Delete account state ──
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
   useEffect(() => { if (!loading && !user) router.push("/login"); }, [user, loading, router]);
   useEffect(() => { if (user) setCurrentPhotoURL(user.photoURL || ""); }, [user]);
 
@@ -792,7 +888,59 @@ export default function Profile() {
     catch { console.error("Logout failed"); }
   };
 
+  // ── Delete account handler ────────────────────────────────────────────────
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      // 1. Delete Firestore user document
+      await deleteDoc(doc(db, "users", user.uid));
+      // 2. Delete Firebase Auth account
+      await deleteUser(user);
+      // 3. Redirect to home
+      router.push("/");
+    } catch (err) {
+      // Firebase requires recent login for deleteUser — handle that gracefully
+      if (err.code === "auth/requires-recent-login") {
+        setDeleteError("For security, please log out and log back in before deleting your account.");
+      } else {
+        setDeleteError("Failed to delete account. Please try again.");
+      }
+      setDeleting(false);
+    }
+  };
+
   const cm = isMobile ? S.cardMobile : {};
+
+  // ── Shared account actions block (Sign Out + Delete) ──────────────────────
+  const AccountActions = () => (
+    <div style={{ marginTop: isMobile ? 20 : 24, display: "flex", flexDirection: "column", gap: 0 }}>
+      <button
+        onClick={handleLogout}
+        style={S.btnSignOut}
+        onMouseEnter={(e) => { e.target.style.background = "rgba(239, 68, 68, 0.15)"; }}
+        onMouseLeave={(e) => { e.target.style.background = "rgba(239, 68, 68, 0.1)"; }}
+      >
+        Sign Out
+      </button>
+      <button
+        onClick={() => { setDeleteError(""); setShowDeleteModal(true); }}
+        style={S.btnDeleteAccount}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(239, 68, 68, 0.06)";
+          e.currentTarget.style.color = "#ef4444";
+          e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.4)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = "rgba(239, 68, 68, 0.6)";
+          e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.2)";
+        }}
+      >
+        🗑️ Delete Account
+      </button>
+    </div>
+  );
 
   return (
     <main style={S.main}>
@@ -902,7 +1050,7 @@ export default function Profile() {
                 <div style={S.divider} />
                 <div><div style={S.infoLabel}>Account Status</div><div style={{ ...S.infoValue, color: "var(--accent-success)" }}>✅ Active</div></div>
               </div>
-              <button onClick={handleLogout} style={{ ...S.btnSignOut, marginTop: 20 }}>Sign Out</button>
+              <AccountActions />
             </div>
 
             <PostsSection myPosts={myPosts} postCount={postCount} S={S} cm={cm} />
@@ -1047,12 +1195,7 @@ export default function Profile() {
                     <div style={{ ...S.infoValue, color: "var(--accent-success)" }}>✅ Active</div>
                   </div>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  style={{ ...S.btnSignOut, marginTop: 24 }}
-                  onMouseEnter={(e) => { e.target.style.background = "rgba(239, 68, 68, 0.15)"; }}
-                  onMouseLeave={(e) => { e.target.style.background = "rgba(239, 68, 68, 0.1)"; }}
-                >Sign Out</button>
+                <AccountActions />
               </div>
 
               <div style={{ ...S.card, height: "100%", boxSizing: "border-box" }}>
@@ -1080,6 +1223,16 @@ export default function Profile() {
 
       {showFollowers && <UserListModal title="Followers" uids={followers} onClose={() => setShowFollowers(false)} />}
       {showFollowing && <UserListModal title="Following" uids={following} onClose={() => setShowFollowing(false)} />}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <DeleteAccountModal
+          onConfirm={handleDeleteAccount}
+          onClose={() => { if (!deleting) { setShowDeleteModal(false); setDeleteError(""); } }}
+          deleting={deleting}
+          deleteError={deleteError}
+        />
+      )}
     </main>
   );
 }

@@ -102,7 +102,8 @@ export default function FeedColumn({
   onCancelEditComment,
   onSaveCommentEdit,
   onDeleteComment,
-  onToggleCommentReaction, // ← new prop
+  onVotePoll,
+  onToggleCommentReaction,
   // Composer props
   content,
   setContent,
@@ -118,6 +119,8 @@ export default function FeedColumn({
   error,
   onPost,
   onOpenCodeEditor,
+  pollOptions,
+  setPollOptions,
 }) {
   const postCardProps = {
     user, isMobile, openCommentsFor, commentDraft, setCommentDraft,
@@ -127,7 +130,8 @@ export default function FeedColumn({
     onDeletePost, onStartEdit, onCancelEdit, onSaveEdit, onToggleComments,
     onAddComment, onStartEditComment, onCancelEditComment, onSaveCommentEdit,
     onDeleteComment,
-    onToggleCommentReaction, // ← forwarded
+    onVotePoll,
+    onToggleCommentReaction,
   };
 
   return (
@@ -151,6 +155,8 @@ export default function FeedColumn({
         onOpenCodeEditor={onOpenCodeEditor}
         getLivePhoto={getLivePhoto}
         getLiveName={getLiveName}
+        pollOptions={pollOptions}
+        setPollOptions={setPollOptions}
       />
 
       <div style={S.feedFiltersBar}>

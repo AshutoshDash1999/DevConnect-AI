@@ -87,6 +87,7 @@ export default function Dashboard() {
   const [showAiDraft, setShowAiDraft] = useState(false);
   const [showCodeEditor, setShowCodeEditor] = useState(false);
   const [error, setError] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
 
   // ── Feed / UI state ──────────────────────────────────────────────────────
   const [posts, setPosts] = useState([]);
@@ -354,9 +355,17 @@ export default function Dashboard() {
   // ── Post CRUD ─────────────────────────────────────────────────────────────
   const handleCreatePost = async () => {
     if (!content.trim() || !user) return;
+    // Poll validation
+    if (postType === "poll") {
+      const validOptions = pollOptions.filter((o) => o.trim());
+      if (validOptions.length < 2) {
+        setError("Please add at least 2 poll options.");
+        return;
+      }
+    }
     try {
       setPosting(true); setError("");
-      await addDoc(collection(db, "posts"), {
+      const postData = {
         uid: user.uid,
         displayName: user.displayName || user.email || "Anonymous User",
         photoURL: user.photoURL || "",
@@ -365,9 +374,18 @@ export default function Dashboard() {
         postType,
         timestamp: serverTimestamp(),
         likes: 0, likedBy: [], comments: [],
-      });
+      };
+      // Attach poll data if poll type
+      if (postType === "poll") {
+        postData.pollOptions = pollOptions.filter((o) => o.trim());
+        postData.pollVotes = {}; // { "0": [], "1": [], ... }
+      }
+      await addDoc(collection(db, "posts"), postData);
       await updateStreak(user.uid);
-      setContent(""); setSelectedTags([]); setPostType("discussion");
+      setContent("");
+      setSelectedTags([]);
+      setPostType("discussion");
+      setPollOptions(["", ""]);
     } catch (err) {
       console.error(err);
       setError("Failed to create post. Please try again.");
@@ -423,6 +441,40 @@ export default function Dashboard() {
       await updateDoc(doc(db, "posts", postId), { content: editContent.trim(), edited: true });
       setEditingId(null); setEditContent("");
     } catch (err) { console.error(err); setError("Failed to update post."); }
+  };
+
+  // ── Poll voting ───────────────────────────────────────────────────────────
+  const handleVotePoll = async (post, optionIdx) => {
+    if (!user) return;
+    const votes = post.pollVotes || {};
+    const options = post.pollOptions || [];
+
+    // Find if user already voted for any option
+    const prevVotedIdx = options.findIndex((_, idx) =>
+      (votes[idx] || []).includes(user.uid)
+    );
+
+    // Build updated votes object
+    const updatedVotes = { ...votes };
+
+    // Remove previous vote if any
+    if (prevVotedIdx !== -1 && prevVotedIdx !== optionIdx) {
+      updatedVotes[prevVotedIdx] = (votes[prevVotedIdx] || []).filter((uid) => uid !== user.uid);
+    }
+
+    // Toggle: if clicking same option, remove vote; otherwise add
+    if (prevVotedIdx === optionIdx) {
+      updatedVotes[optionIdx] = (votes[optionIdx] || []).filter((uid) => uid !== user.uid);
+    } else {
+      updatedVotes[optionIdx] = [...(votes[optionIdx] || []), user.uid];
+    }
+
+    try {
+      await updateDoc(doc(db, "posts", post.id), { pollVotes: updatedVotes });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to record vote.");
+    }
   };
 
   // ── Comment CRUD ──────────────────────────────────────────────────────────
@@ -500,6 +552,7 @@ export default function Dashboard() {
     onCancelEditComment: cancelEditComment,
     onSaveCommentEdit: handleSaveCommentEdit,
     onDeleteComment: handleDeleteComment,
+    onVotePoll: handleVotePoll,
   };
 
   const composerProps = {
@@ -508,6 +561,8 @@ export default function Dashboard() {
     showAiDraft, setShowAiDraft, posting, error,
     onPost: handleCreatePost,
     onOpenCodeEditor: () => setShowCodeEditor(true),
+    pollOptions,
+    setPollOptions,
   };
 
   const feedColumnProps = {

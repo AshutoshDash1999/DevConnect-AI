@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import AIDraftAssistant from "../AIDraftAssistant";
 import UserAvatar from "./UserAvatar";
 
@@ -32,6 +33,7 @@ const S = {
     gap: 8,
     paddingTop: 10,
     borderTop: "1px solid rgba(255,255,255,0.05)",
+    flexWrap: "wrap",
   },
   postTypeBtn: (active) => ({
     display: "flex",
@@ -147,6 +149,53 @@ const S = {
     cursor: "not-allowed",
     fontSize: "0.9rem",
   },
+  // Poll builder styles
+  pollBuilder: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    padding: 12,
+    background: "var(--bg-primary)",
+    borderRadius: "var(--radius-md)",
+    border: "1px solid var(--border-color)",
+  },
+  pollOptionRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+  pollInput: {
+    flex: 1,
+    padding: "7px 10px",
+    background: "var(--bg-secondary)",
+    border: "1px solid var(--border-color)",
+    borderRadius: "var(--radius-md)",
+    color: "var(--text-primary)",
+    fontSize: "0.85rem",
+    fontFamily: "inherit",
+    outline: "none",
+  },
+  btnAddOption: {
+    padding: "6px 12px",
+    background: "transparent",
+    border: "1px dashed var(--border-color)",
+    borderRadius: "var(--radius-md)",
+    color: "var(--text-muted)",
+    fontSize: "0.8rem",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    textAlign: "left",
+  },
+  btnRemoveOption: {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "var(--text-muted)",
+    fontSize: "1rem",
+    padding: "0 4px",
+    lineHeight: 1,
+    flexShrink: 0,
+  },
 };
 
 const AVAILABLE_TAGS = [
@@ -158,8 +207,9 @@ const AVAILABLE_TAGS = [
 
 const POST_TYPES = [
   { id: "discussion", label: "💬 Discussion" },
-  { id: "question", label: "❔ Question" },
+  { id: "question",   label: "❔ Question" },
   { id: "collaboration", label: "🤝 Collaborate" },
+  { id: "poll",       label: "📊 Poll" },
 ];
 
 export default function PostComposer({
@@ -181,6 +231,9 @@ export default function PostComposer({
   onOpenCodeEditor,
   getLivePhoto,
   getLiveName,
+  // Poll props
+  pollOptions,
+  setPollOptions,
 }) {
   const toggleTag = (tag) =>
     setSelectedTags((prev) =>
@@ -196,6 +249,22 @@ export default function PostComposer({
     setCustomTag("");
   };
 
+  const updatePollOption = (idx, val) =>
+    setPollOptions((prev) => prev.map((o, i) => i === idx ? val : o));
+
+  const removePollOption = (idx) =>
+    setPollOptions((prev) => prev.filter((_, i) => i !== idx));
+
+  const addPollOption = () => {
+    if (pollOptions.length >= 6) return;
+    setPollOptions((prev) => [...prev, ""]);
+  };
+
+  // Poll is postable if question + at least 2 non-empty options
+  const pollReady = postType === "poll"
+    ? content.trim().length > 0 && pollOptions.filter((o) => o.trim()).length >= 2
+    : content.trim().length > 0;
+
   return (
     <div id="composer-card" style={S.composerCard}>
       <div style={S.composerHeader}>
@@ -207,7 +276,11 @@ export default function PostComposer({
         <div style={S.composerInputWrapper}>
           <textarea
             style={S.composerTextarea}
-            placeholder="Share a coding question, project idea, or debugging help..."
+            placeholder={
+              postType === "poll"
+                ? "Ask a poll question… e.g. Which state management do you prefer?"
+                : "Share a coding question, project idea, or debugging help..."
+            }
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
@@ -216,11 +289,51 @@ export default function PostComposer({
 
       <div style={S.postTypeRow}>
         {POST_TYPES.map(({ id, label }) => (
-          <button key={id} style={S.postTypeBtn(postType === id)} onClick={() => setPostType(id)} type="button">
+          <button
+            key={id}
+            style={S.postTypeBtn(postType === id)}
+            onClick={() => setPostType(id)}
+            type="button"
+          >
             {label}
           </button>
         ))}
       </div>
+
+      {/* Poll builder — only shown when poll type is active */}
+      {postType === "poll" && (
+        <div style={S.pollBuilder}>
+          <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: 2 }}>
+            Poll options (min 2, max 6)
+          </div>
+          {pollOptions.map((opt, idx) => (
+            <div key={idx} style={S.pollOptionRow}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", width: 16, flexShrink: 0 }}>
+                {idx + 1}.
+              </span>
+              <input
+                style={S.pollInput}
+                value={opt}
+                onChange={(e) => updatePollOption(idx, e.target.value)}
+                placeholder={`Option ${idx + 1}`}
+                maxLength={80}
+              />
+              {pollOptions.length > 2 && (
+                <button
+                  style={S.btnRemoveOption}
+                  onClick={() => removePollOption(idx)}
+                  title="Remove option"
+                >✕</button>
+              )}
+            </div>
+          ))}
+          {pollOptions.length < 6 && (
+            <button style={S.btnAddOption} onClick={addPollOption}>
+              + Add option
+            </button>
+          )}
+        </div>
+      )}
 
       <div id="composer-tags" style={S.composerTagsInput}>
         {AVAILABLE_TAGS.map((tag) => (
@@ -296,9 +409,9 @@ export default function PostComposer({
         </label>
 
         <button
-          style={posting || !content.trim() ? S.btnPostDisabled : S.btnPost}
+          style={posting || !pollReady ? S.btnPostDisabled : S.btnPost}
           onClick={onPost}
-          disabled={posting || !content.trim()}
+          disabled={posting || !pollReady}
         >
           {posting ? "Posting..." : "Post"}
         </button>

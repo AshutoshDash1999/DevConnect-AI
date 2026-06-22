@@ -751,13 +751,13 @@ function PostCard({ post, S, pinned, onTogglePin, pinDisabled }) {
 
   return (
     <div
-      style={{
-        ...S.postCard,
-        ...(pinned ? { borderColor: "1px solid var(--accent-primary)", boxShadow: "0 0 0 1px var(--accent-primary-alpha)" } : {}),
-      }}
-      onMouseEnter={(e) => { if (!pinned) e.currentTarget.style.borderColor = "var(--accent-primary)"; }}
-      onMouseLeave={(e) => { if (!pinned) e.currentTarget.style.borderColor = "var(--border-color)"; }}
-    >
+  style={{
+    ...S.postCard,
+    ...(pinned ? { border: "1px solid var(--accent-primary)", boxShadow: "0 0 0 1px var(--accent-primary-alpha)" } : {}),
+  }}
+  onMouseEnter={(e) => { if (!pinned) e.currentTarget.style.border = "1px solid var(--accent-primary)"; }}
+  onMouseLeave={(e) => { if (!pinned) e.currentTarget.style.border = "1px solid var(--border-color)"; }}
+>
       <div style={S.postMeta}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={S.postTypeTag}>{typeLabel}</span>

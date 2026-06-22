@@ -86,6 +86,7 @@ export default function Dashboard() {
   const [customTag, setCustomTag] = useState("");
   const [showAiDraft, setShowAiDraft] = useState(false);
   const [showCodeEditor, setShowCodeEditor] = useState(false);
+  
   const [error, setError] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
 
@@ -638,6 +639,7 @@ const handleToggleCommentReaction = async (post, comment, emoji) => {
                   activeMembers={activeMembers}
                   activeTag={activeTag}
                   onTagClick={(tag) => setActiveTag((prev) => prev === tag ? null : tag)}
+                
               />
             </div>
           )}

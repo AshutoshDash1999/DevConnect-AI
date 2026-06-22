@@ -212,6 +212,8 @@ export default function Dashboard() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [profilePopup]);
 
+
+
   // ── Deep-link scroll to post via hash ────────────────────────────────────
   const scrollToHashPost = useCallback(() => {
     const hash = window.location.hash;
@@ -293,6 +295,44 @@ export default function Dashboard() {
   }, [usersCache, router]);
 
   // ── Follow / Unfollow ─────────────────────────────────────────────────────
+  // ── Comment reactions ────────────────────────────────────────────────────
+// ── Comment reactions (one emoji per user per comment) ──────────────────
+const handleToggleCommentReaction = async (post, comment, emoji) => {
+  if (!user) return;
+  const reactions = comment.reactions || {};
+  
+
+  // Find which emoji (if any) this user currently has on this comment
+  const currentEmoji = Object.keys(reactions).find((e) =>
+    (reactions[e] || []).includes(user.uid)
+  );
+
+  // Strip the user out of every emoji's reactor list first
+  const updatedReactions = {};
+  Object.keys(reactions).forEach((e) => {
+    const filtered = (reactions[e] || []).filter((uid) => uid !== user.uid);
+    if (filtered.length > 0) updatedReactions[e] = filtered;
+  });
+
+  // If they clicked the emoji they already had, this is a toggle-off → leave removed.
+  // Otherwise, add them to the newly clicked emoji.
+  if (currentEmoji !== emoji) {
+    updatedReactions[emoji] = [...(updatedReactions[emoji] || []), user.uid];
+  }
+
+  const updatedComments = (post.comments || []).map((c) =>
+    c.createdAt === comment.createdAt && c.uid === comment.uid
+      ? { ...c, reactions: updatedReactions }
+      : c
+  );
+
+  try {
+    await updateDoc(doc(db, "posts", post.id), { comments: updatedComments });
+  } catch (err) {
+    console.error(err);
+    setError("Failed to update reaction.");
+  }
+};
   const handleFollowToggle = useCallback(async (targetUid, isCurrentlyFollowing) => {
     if (!user || !targetUid || targetUid === user.uid) return;
     try {
@@ -553,6 +593,7 @@ export default function Dashboard() {
     onSaveCommentEdit: handleSaveCommentEdit,
     onDeleteComment: handleDeleteComment,
     onVotePoll: handleVotePoll,
+     onToggleCommentReaction: handleToggleCommentReaction,
   };
 
   const composerProps = {

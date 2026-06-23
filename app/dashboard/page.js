@@ -11,6 +11,8 @@ import SavedPosts from "../../components/SavedPosts";
 import FeatureTour from "../../components/FeatureTour";
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../lib/firebase";
+import { captureEvent } from "../../lib/posthog/helpers";
+import { EVENTS } from "../../lib/posthog/events";
 import AIDraftAssistant from "../../components/AIDraftAssistant";
 import { createNotification } from "../../lib/notifications";
 import {
@@ -832,6 +834,7 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [posting, setPosting] = useState(false);
   const [showAiDraft, setShowAiDraft] = useState(false);
+  const [aiDraftUsed, setAiDraftUsed] = useState(false);
   const [selectedTags, setSelectedTags] = useState([]);
   const [customTag, setCustomTag] = useState("");
   const [postType, setPostType] = useState("discussion");
@@ -1082,7 +1085,12 @@ export default function Dashboard() {
         timestamp: serverTimestamp(),
         likes: 0, likedBy: [], comments: [],
       });
-      setContent(""); setSelectedTags([]); setPostType("discussion");
+      captureEvent(EVENTS.POST_CREATED, {
+        has_code_snippet: content.includes("```"),
+        used_ai_draft: aiDraftUsed,
+        tag_count: selectedTags.length,
+      });
+      setContent(""); setSelectedTags([]); setPostType("discussion"); setAiDraftUsed(false);
     } catch (err) { console.error(err); setError("Failed to create post. Please try again."); }
     finally { setPosting(false); }
   };
@@ -1376,7 +1384,7 @@ export default function Dashboard() {
         </button>
       </div>
       {showAiDraft && (
-        <AIDraftAssistant onInsert={(draft) => { setContent((prev) => (prev ? prev + "\n\n" + draft : draft)); setShowAiDraft(false); }} />
+        <AIDraftAssistant onInsert={(draft) => { setContent((prev) => (prev ? prev + "\n\n" + draft : draft)); setShowAiDraft(false); setAiDraftUsed(true); }} />
       )}
     </div>
   );

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "../../context/ThemeContext";
 import Link from "next/link";
 import { Sparkles, Mail, KeyRound, User, Sun, Moon, Eye, EyeOff } from "lucide-react";
+import { captureEvent } from "../../lib/posthog/helpers";
+import { EVENTS } from "../../lib/posthog/events";
 
 // Inline styles can't use @media queries, so layout-critical values
 // branch on this instead.
@@ -66,6 +68,7 @@ export default function Signup() {
     setLoading(true);
     try {
       await signupWithEmail(email, password, fullName);
+      captureEvent(EVENTS.USER_SIGNED_UP, { method: "email" });
       router.push("/dashboard");
     } catch (err) {
       console.error(err);
@@ -94,6 +97,7 @@ export default function Signup() {
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
+      captureEvent(EVENTS.USER_SIGNED_UP, { method: "google" });
       router.push("/dashboard");
     } catch (err) {
       console.error(err);
@@ -104,6 +108,7 @@ export default function Signup() {
   const handleGithubLogin = async () => {
     try {
       await loginWithGithub();
+      captureEvent(EVENTS.USER_SIGNED_UP, { method: "github" });
       router.push("/dashboard");
     } catch (err) {
       console.error(err);

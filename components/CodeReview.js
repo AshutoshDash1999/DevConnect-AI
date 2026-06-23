@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { captureEvent } from '../lib/posthog/helpers';
+import { EVENTS } from '../lib/posthog/events';
 
 export default function CodeReview() {
   const [code, setCode] = useState('');
@@ -27,14 +29,17 @@ export default function CodeReview() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
+        captureEvent(EVENTS.CODE_REVIEW_REQUESTED, { language: data.review?.language || 'unknown' });
         setReview(data.review);
       } else {
+        captureEvent(EVENTS.API_ERROR, { route: '/api/code-review', status_code: response.status });
         alert(data.error || 'Review failed');
       }
     } catch (error) {
       console.error('Review error:', error);
+      captureEvent(EVENTS.API_ERROR, { route: '/api/code-review', status_code: 0 });
       alert('Failed to review code. Please try again.');
     } finally {
       setIsReviewing(false);

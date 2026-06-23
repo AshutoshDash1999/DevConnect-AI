@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "../../context/ThemeContext";
 import Link from "next/link";
 import { Sparkles, Mail, KeyRound, Sun, Moon, Eye, EyeOff } from "lucide-react";
+import { captureEvent } from "../../lib/posthog/helpers";
+import { EVENTS } from "../../lib/posthog/events";
 
 export default function Login() {
   const { loginWithGoogle, loginWithGithub, loginWithEmail, user } = useAuth();
@@ -37,6 +39,7 @@ export default function Login() {
     setLoading(true);
     try {
       await loginWithEmail(email, password);
+      captureEvent(EVENTS.USER_LOGGED_IN, { method: "email" });
       router.push("/dashboard");
     } catch (err) {
       console.error(err);
@@ -65,6 +68,7 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
+      captureEvent(EVENTS.USER_LOGGED_IN, { method: "google" });
       router.push("/dashboard");
     } catch (err) {
       console.error(err);
@@ -75,6 +79,7 @@ export default function Login() {
   const handleGithubLogin = async () => {
     try {
       await loginWithGithub();
+      captureEvent(EVENTS.USER_LOGGED_IN, { method: "github" });
       router.push("/dashboard");
     } catch (err) {
       console.error(err);
